@@ -7,10 +7,13 @@
 
 ### Todos:
 
-[done] Initialise a project
+- [done] Initialise a project
 
-[done] Project Structure
+- [done] Project Structure
 
-[done] Document pre-processing
+- [done] Document pre-processing
 
-[next] Vectorstore
+- [done] Vectorstore
+
+- [next] State
+  - define the RAG State
