@@ -15,5 +15,6 @@
 
 - [done] Vectorstore
 
-- [next] State
-  - define the RAG State
+- [done] State
+
+- [next] Nodes and Graph structure
