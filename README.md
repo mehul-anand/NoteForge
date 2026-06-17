@@ -11,4 +11,6 @@
 
 [done] Project Structure
 
-[next] Document pre-processing
+[done] Document pre-processing
+
+[next] Vectorstore
