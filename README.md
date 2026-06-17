@@ -8,5 +8,7 @@
 ### Todos:
 
 [done] Initialise a project
+
 [done] Project Structure
+
 [next] Document pre-processing
