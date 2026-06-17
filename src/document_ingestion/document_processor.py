@@ -56,3 +56,10 @@ class DocumentHandler:
                     f"Unsupported source stype: {src} \n Please use URL, text files or PDF directory"
                 )
         return docs
+
+    def doc_splitter(self, documents: List[Document]) -> List[Document]:
+        return self.splitter.split_documents(documents)
+
+    def process_urls(self, urls: List[str]) -> List[Document]:
+        docs = self.all_document_loader(urls)
+        return self.doc_splitter(docs)
