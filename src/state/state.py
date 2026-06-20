@@ -5,6 +5,8 @@ from pydantic import BaseModel
 
 
 class State(BaseModel):
+    """State Object for the RAG Workflow"""
+
     question: str
     retrieved_docs: List[Document] = []
-    answer: str
+    answer: str = ""

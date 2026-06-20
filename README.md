@@ -18,3 +18,4 @@
 - [done] State
 
 - [next] Nodes and Graph structure
+  - designing the whole workflow
