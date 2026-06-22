@@ -7,6 +7,8 @@
 
 ### Todos:
 
+#### Todos for v1:
+
 - [done] Initialise a project
 
 - [done] Project Structure
@@ -19,3 +21,5 @@
 
 - [done] Nodes and Graph structure
   - designing the whole workflow
+
+- [done] deploy the basic version
