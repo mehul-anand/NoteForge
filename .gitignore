@@ -222,3 +222,6 @@ test/
 
 # Notes Folder
 notes/
+
+# Remove DS Store
+.DS_Store
