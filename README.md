@@ -17,5 +17,5 @@
 
 - [done] State
 
-- [next] Nodes and Graph structure
+- [done] Nodes and Graph structure
   - designing the whole workflow
