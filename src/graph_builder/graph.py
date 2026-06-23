@@ -3,7 +3,6 @@
 from langgraph.graph import END, START, StateGraph
 
 from src.nodes.react_node import Nodes
-# from src.nodes.nodes import Nodes
 from src.state.state import State
 
 
@@ -17,17 +16,10 @@ class GraphBuilder:
         self.graph = None
 
     def build(self):
-        # create the graph
         builder = StateGraph(State)
-        # nodes
-        builder.add_node("retriever", self.nodes.retrieve_docs)
-        builder.add_node("responder", self.nodes.generate_answer)
-        # entry point
-        builder.set_entry_point("retriever")
-        # edges
-        builder.add_edge("retriever", "responder")
-        builder.add_edge("responder", END)
-        # compile the graph
+        builder.add_node("agent", self.nodes.agent_node)
+        builder.set_entry_point("agent")
+        builder.add_edge("agent", END)
         self.graph = builder.compile()
         return self.graph
 

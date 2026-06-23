@@ -217,6 +217,9 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
+# Old archived versions
+old_version/
+
 # Test folder
 test/
 

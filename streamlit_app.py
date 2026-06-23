@@ -23,7 +23,7 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 
 with st.sidebar:
-    st.header("🔑 API Key")
+    st.header("🔑 API Keys")
     api_key = st.text_input(
         "OpenAI API Key",
         type="password",
@@ -31,6 +31,14 @@ with st.sidebar:
     )
     if api_key:
         os.environ["OPENAI_API_KEY"] = api_key
+
+    tavily_api_key = st.text_input(
+        "Tavily API Key",
+        type="password",
+        value=os.getenv("TAVILY_API_KEY", ""),
+    )
+    if tavily_api_key:
+        os.environ["TAVILY_API_KEY"] = tavily_api_key
 
     st.divider()
     st.header("📄 Documents")
