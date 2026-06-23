@@ -26,8 +26,12 @@
 
 #### Todos for v2:
 
-- [next] Tavily
+- [done] Tavily
+  - replaced Wikipedia
 
-- [to-do] Evaluation
+- [done] Evaluation
+  - [done] Using Notebooklm to test the outputs for now
+  - [done] Tool selection issue found and fixed (agent bypassed retriever for Tavily)
+  - [done] Created Evaluations/ with bug → plan → fix workflow
 
 - [to-do] Corrective strategies
