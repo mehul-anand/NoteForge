@@ -23,3 +23,11 @@
   - designing the whole workflow
 
 - [done] deploy the basic version
+
+#### Todos for v2:
+
+- [next] Tavily
+
+- [to-do] Evaluation
+
+- [to-do] Corrective strategies
