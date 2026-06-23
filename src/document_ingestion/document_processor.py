@@ -3,9 +3,12 @@
 from pathlib import Path
 from typing import List, Union
 
-from langchain_community.document_loaders import (PyPDFDirectoryLoader,
-                                                  PyPDFLoader, TextLoader,
-                                                  WebBaseLoader)
+from langchain_community.document_loaders import (
+    PyPDFDirectoryLoader,
+    PyPDFLoader,
+    TextLoader,
+    WebBaseLoader,
+)
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
@@ -13,7 +16,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 class DocumentHandler:
     """Handles document loading and processing"""
 
-    def __init__(self, chunk_size: int = 500, chunk_overlap: int = 50):
+    def __init__(self, chunk_size: int = 1500, chunk_overlap: int = 150):
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
         self.splitter = RecursiveCharacterTextSplitter(

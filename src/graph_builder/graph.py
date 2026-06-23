@@ -17,8 +17,10 @@ class GraphBuilder:
 
     def build(self):
         builder = StateGraph(State)
+        builder.add_node("retrieve", self.nodes.retrieve_docs)
         builder.add_node("agent", self.nodes.agent_node)
-        builder.set_entry_point("agent")
+        builder.set_entry_point("retrieve")
+        builder.add_edge("retrieve", "agent")
         builder.add_edge("agent", END)
         self.graph = builder.compile()
         return self.graph

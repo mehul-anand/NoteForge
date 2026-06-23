@@ -17,50 +17,54 @@ class Nodes:
         self.llm = llm
         self._agent = None
 
-    def _build_tools(self) -> List[Tool]:
-        def retriever_tool_func(query: str) -> str:
-            docs: List[Document] = self.retriever.invoke(query)
-            if not docs:
-                return "No documents found"
-            merged = []
-            for i, d in enumerate(docs[:8], start=1):
-                meta = d.metadata if hasattr(d, "metadata") else {}
-                title = meta.get("title") or meta.get("source") or f"doc_{i}"
-                merged.append(f"[{i}] {title} \n {d.page_content}")
-            return "\n\n".join(merged)
+    def retrieve_docs(self, state: State) -> State:
+        docs = self.retriever.invoke(state.question)
+        return State(question=state.question, retrieved_docs=docs)
 
-        retrieval_tool = Tool(
-            name="retriever",
-            description="Fetch passages from uploaded documents (PDFs, web pages, text files). Use this FIRST for questions about ingested content.",
-            func=retriever_tool_func,
-        )
+    def _build_tools(self) -> List[Tool]:
         tavily_tool = TavilySearchResults(
             max_results=3,
-            description="Search the web for current or external information. Use this ONLY if the retriever finds nothing relevant, or if the question asks about live/up-to-date info.",
+            description="Search the web for current or external information. Use this for supplementary info not found in the user's documents (e.g., establishment year of an institution).",
         )
-        return [retrieval_tool, tavily_tool]
+        return [tavily_tool]
 
     def _build_agent(self):
         tools = self._build_tools()
         system_prompt = (
-            "You are a RAG agent. Always try the 'retriever' tool first for questions about the user's documents. "
-            "If the retriever returns nothing relevant, or if the question asks for current/live information, "
-            "fall back to 'tavily_search' to search the web. "
-            "Once you have enough information, provide a clear answer. "
-            "If neither tool yields useful information, say so."
+            "You are a RAG agent. The user's uploaded documents have already been retrieved "
+            "and are provided to you as 'RETRIEVED DOCUMENTS' below.\n\n"
+            "Rules:\n"
+            "1. The 'RETRIEVED DOCUMENTS' are from the user's actual uploaded files — they are ground truth.\n"
+            "2. Always answer based on these documents first.\n"
+            "3. Use 'tavily_search' ONLY for supplementary information clearly not in the retrieved documents "
+            "(e.g., establishment year of an institution).\n"
+            "4. Do NOT use tavily_search for information already present in the retrieved documents.\n"
+            "5. Count the number of papers by examining distinct document sources in the retrieved passages.\n"
+            "6. If the retrieved documents don't contain enough information, say so rather than making things up."
         )
         self._agent = create_react_agent(self.llm, tools=tools, prompt=system_prompt)
 
     def agent_node(self, state: State) -> State:
         if self._agent is None:
             self._build_agent()
-        result = self._agent.invoke(
-            {"messages": [HumanMessage(content=state.question)]}
+
+        context = "\n\n".join([doc.page_content for doc in state.retrieved_docs])
+        message = (
+            f"=== RETRIEVED DOCUMENTS ===\n\n"
+            f"{context}\n\n"
+            f"=== QUESTION ===\n\n"
+            f"{state.question}"
         )
+
+        result = self._agent.invoke({"messages": [HumanMessage(content=message)]})
         messages = result.get("messages", [])
         answer = ""
         for msg in reversed(messages):
             if isinstance(msg, AIMessage) and msg.content:
                 answer = msg.content
                 break
-        return State(question=state.question, answer=answer)
+        return State(
+            question=state.question,
+            retrieved_docs=state.retrieved_docs,
+            answer=answer,
+        )
