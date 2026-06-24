@@ -1,11 +1,11 @@
 import os
-import tempfile
+from collections import Counter
 from pathlib import Path
 
 import streamlit as st
 from dotenv import load_dotenv
-from langchain_openai import ChatOpenAI
 
+from src.config.config import Config
 from src.document_ingestion.document_processor import DocumentHandler
 from src.graph_builder.graph import GraphBuilder
 from src.vector_store.store import VectorStore
@@ -15,12 +15,56 @@ load_dotenv()
 st.set_page_config(page_title="NoteForge RAG", page_icon="🧠")
 st.title("NoteForge — RAG Q&A")
 
-if "retriever" not in st.session_state:
-    st.session_state.retriever = None
-if "graph" not in st.session_state:
-    st.session_state.graph = None
 if "messages" not in st.session_state:
     st.session_state.messages = []
+
+
+def ingest_documents():
+    data_dir = Path("data")
+    if not data_dir.is_dir():
+        st.info("Create a data/ folder with PDFs to get started.")
+        return
+
+    pdfs = sorted(data_dir.glob("*.pdf")) + sorted(data_dir.glob("*.txt"))
+    if not pdfs:
+        st.info("Drop PDFs into the data/ folder and restart.")
+        return
+
+    handler = DocumentHandler()
+    all_docs = []
+
+    with st.status("📄 Loading documents…", expanded=True) as status:
+        for pdf in pdfs:
+            status.write(f"Loading {pdf.name} …")
+            loaded = (
+                handler.pdf_loader(str(pdf))
+                if pdf.suffix == ".pdf"
+                else handler.text_loader(str(pdf))
+            )
+            all_docs.extend(loaded)
+
+        status.write("Splitting into chunks …")
+        chunks = handler.doc_splitter(all_docs)
+
+        source_counts = Counter(doc.metadata.get("source", "unknown") for doc in chunks)
+
+        status.write(f"Embedding {len(chunks)} chunks …")
+        vs = VectorStore()
+        vs.create_retriever(chunks)  # fixed: was create_retreiver (typo)
+        st.session_state.retriever = vs.get_retriever()
+
+        status.write("Building graph …")
+        llm = Config.get_llm()
+        builder = GraphBuilder(st.session_state.retriever, llm)
+        builder.build()
+        st.session_state.graph = builder
+        st.session_state.chunk_counts = source_counts
+
+        status.update(
+            label=f"✅ Ready — {len(pdfs)} docs, {len(chunks)} chunks",
+            state="complete",
+        )
+
 
 with st.sidebar:
     st.header("🔑 API Keys")
@@ -41,61 +85,14 @@ with st.sidebar:
         os.environ["TAVILY_API_KEY"] = tavily_api_key
 
     st.divider()
-    st.header("📄 Documents")
 
-    urls = st.text_area("URLs (one per line)", placeholder="https://example.com/doc")
-    uploaded = st.file_uploader(
-        "Upload PDFs / TXT", accept_multiple_files=True, type=["pdf", "txt"]
-    )
+    if api_key and "graph" not in st.session_state:
+        ingest_documents()
 
-    if st.button("🚀 Ingest & Build Graph", type="primary"):
-        if not api_key:
-            st.error("Enter an API key first")
-            st.stop()
-
-        handler = DocumentHandler()
-        all_docs = []
-
-        with st.status("Processing…", expanded=True) as status:
-            if urls:
-                for url in filter(None, urls.strip().split("\n")):
-                    status.write(f"Loading {url} …")
-                    docs = handler.url_loader(url)
-                    all_docs.extend(handler.doc_splitter(docs))
-
-            if uploaded:
-                for f in uploaded:
-                    suffix = Path(f.name).suffix
-                    with tempfile.NamedTemporaryFile(
-                        suffix=suffix, delete=False
-                    ) as tmp:
-                        tmp.write(f.getbuffer())
-                        tmp_path = tmp.name
-                    status.write(f"Loading {f.name} …")
-                    loaded = (
-                        handler.pdf_loader(tmp_path)
-                        if suffix == ".pdf"
-                        else handler.text_loader(tmp_path)
-                    )
-                    all_docs.extend(handler.doc_splitter(loaded))
-                    os.unlink(tmp_path)
-
-            if not all_docs:
-                st.warning("No documents loaded")
-                st.stop()
-
-            status.write(f"Embedding {len(all_docs)} chunks …")
-            vs = VectorStore()
-            vs.create_retreiver(all_docs)
-            st.session_state.retriever = vs.get_retriever()
-
-            status.write("Building graph …")
-            llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
-            builder = GraphBuilder(st.session_state.retriever, llm)
-            builder.build()
-            st.session_state.graph = builder
-
-            status.update(label="✅ Ready — ask away!", state="complete")
+    if "chunk_counts" in st.session_state:
+        st.caption("📊 Index")
+        for source, count in st.session_state.chunk_counts.most_common():
+            st.caption(f"  {Path(source).name} — {count} chunks")
 
     st.divider()
     if st.button("🗑 Clear chat"):
@@ -110,8 +107,10 @@ if prompt := st.chat_input("Ask about your documents …"):
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    if st.session_state.graph is None:
-        answer = "⚠️ Ingest documents first via the sidebar."
+    if "graph" not in st.session_state or st.session_state.graph is None:
+        answer = (
+            "⚠️ No documents loaded. Add PDFs to the data/ folder and enter API keys."
+        )
     else:
         with st.chat_message("assistant"):
             with st.spinner("Thinking …"):
