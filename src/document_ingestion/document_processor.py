@@ -3,20 +3,23 @@
 from pathlib import Path
 from typing import List, Union
 
-from langchain_community.document_loaders import (
-    PyPDFDirectoryLoader,
-    PyPDFLoader,
-    TextLoader,
-    WebBaseLoader,
-)
+from langchain_community.document_loaders import (PyPDFDirectoryLoader,
+                                                  PyPDFLoader, TextLoader,
+                                                  WebBaseLoader)
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+
+from src.config.config import Config
 
 
 class DocumentHandler:
     """Handles document loading and processing"""
 
-    def __init__(self, chunk_size: int = 1500, chunk_overlap: int = 150):
+    def __init__(
+        self,
+        chunk_size: int = Config.CHUNK_SIZE,
+        chunk_overlap: int = Config.CHUNK_OVERLAP,
+    ):
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
         self.splitter = RecursiveCharacterTextSplitter(
@@ -24,7 +27,7 @@ class DocumentHandler:
         )
 
     def url_loader(self, url: str) -> List[Document]:
-        """Loading documents for chunking from URLs"""
+        """Load documents for chunking from URLs"""
         loader = WebBaseLoader(url)
         return loader.load()
 
@@ -40,29 +43,8 @@ class DocumentHandler:
 
     def pdf_loader(self, file_path: Union[str, Path]) -> List[Document]:
         """Load document(s) from a PDF file"""
-        loader = PyPDFLoader(str(file_path))  # or pass the data folder directly
+        loader = PyPDFLoader(str(file_path))
         return loader.load()
-
-    def all_document_loader(self, sources: List[str]) -> List[Document]:
-        """Loads everything we got as sources"""
-        docs: List[Document] = []
-        for src in sources:
-            if src.startswith("http://") or src.startswith("https://"):
-                docs.extend(self.url_loader(src))
-            path = Path("data")
-            if path.is_dir():
-                docs.extend(self.pdf_dir_loader(path))
-            elif path.suffix.lower() == ".txt":
-                docs.extend(self.text_loader(path))
-            else:
-                raise ValueError(
-                    f"Unsupported source stype: {src} \n Please use URL, text files or PDF directory"
-                )
-        return docs
 
     def doc_splitter(self, documents: List[Document]) -> List[Document]:
         return self.splitter.split_documents(documents)
-
-    def process_urls(self, urls: List[str]) -> List[Document]:
-        docs = self.all_document_loader(urls)
-        return self.doc_splitter(docs)

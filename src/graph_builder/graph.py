@@ -7,7 +7,7 @@ from src.state.state import State
 
 
 class GraphBuilder:
-    """For the langgraph workflow"""
+    """Builds and runs the LangGraph RAG workflow"""
 
     def __init__(self, retriever, llm):
         self.retriever = retriever
@@ -16,12 +16,25 @@ class GraphBuilder:
         self.graph = None
 
     def build(self):
+        """
+        Architecture: START → retrieve → agent → END
+
+        'retrieve' always runs first — mandatory, no agent decision involved.
+        'agent' receives pre-fetched docs from state and only has Tavily
+        for supplementary lookups.
+
+        Old broken architecture was: START → agent → END
+        (agent could skip retrieval entirely and go straight to Tavily)
+        """
         builder = StateGraph(State)
+
         builder.add_node("retrieve", self.nodes.retrieve_docs)
         builder.add_node("agent", self.nodes.agent_node)
+
         builder.set_entry_point("retrieve")
         builder.add_edge("retrieve", "agent")
         builder.add_edge("agent", END)
+
         self.graph = builder.compile()
         return self.graph
 
