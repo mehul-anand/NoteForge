@@ -20,7 +20,8 @@ class VectorStore:
         # k=10 ensures chunks from all uploaded papers come back
         # (old k=4 could miss entire papers when multiple docs are indexed)
         self.retriever = self.vectorstore.as_retriever(
-            search_kwargs={"k": Config.RETRIEVER_K}
+            search_type="mmr",
+            search_kwargs={"k": Config.RETRIEVER_K, "fetch_k": 30, "lambda_mult": 0.7},
         )
 
     def get_retriever(self):

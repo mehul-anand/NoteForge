@@ -19,7 +19,7 @@ class Config:
     # Document processing
     # Increased from 500/50 → larger chunks capture full paper metadata
     # (title, authors, institution) in one chunk instead of fragmenting it
-    CHUNK_SIZE = 1500
+    CHUNK_SIZE = 2500
     CHUNK_OVERLAP = 150
 
     # Retriever config
