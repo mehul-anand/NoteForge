@@ -1,6 +1,6 @@
 """Graph Builder"""
 
-from typing import List
+from typing import Dict, List
 
 from langgraph.graph import END, START, StateGraph
 
@@ -37,8 +37,15 @@ class GraphBuilder:
         self.graph = builder.compile()
         return self.graph
 
-    def run(self, question: str, source_files: List[str] = []) -> dict:
+    def run(
+        self,
+        question: str,
+        source_files: List[str] = [],
+        chat_history: List[Dict[str, str]] = [],
+    ) -> dict:
         if self.graph is None:
             self.build()
-        initial_state = State(question=question, source_files=source_files)
+        initial_state = State(
+            question=question, source_files=source_files, chat_history=chat_history
+        )
         return self.graph.invoke(initial_state)

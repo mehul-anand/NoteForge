@@ -1,4 +1,4 @@
-from typing import List
+from typing import Dict, List
 
 from langchain_core.documents import Document
 from pydantic import BaseModel
@@ -14,3 +14,4 @@ class State(BaseModel):
     # graph run so the agent always knows what files exist, regardless of what
     # the retriever happens to return for a given query.
     source_files: List[str] = []
+    chat_history: List[Dict[str, str]] = []

@@ -122,6 +122,7 @@ if prompt := st.chat_input("Ask about your documents …"):
                 result = st.session_state.graph.run(
                     prompt,
                     source_files=st.session_state.get("source_files", []),
+                    chat_history=st.session_state.messages[:-1],
                 )
                 answer = result.get("answer", "No answer generated.")
             st.markdown(answer)

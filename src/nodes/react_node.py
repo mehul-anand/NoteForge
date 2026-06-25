@@ -39,6 +39,7 @@ class Nodes:
             question=state.question,
             retrieved_docs=docs,
             source_files=state.source_files,  # pass through unchanged
+            chat_history=state.chat_history,
         )
 
     def _build_tools(self) -> List[Tool]:
@@ -108,7 +109,16 @@ class Nodes:
             f"{state.question}"
         )
 
-        result = self._agent.invoke({"messages": [HumanMessage(content=message)]})
+        history_messages = []
+        for msg in state.chat_history:
+            if msg["role"] == "user":
+                history_messages.append(HumanMessage(content=msg["content"]))
+            elif msg["role"] == "assistant":
+                history_messages.append(AIMessage(content=msg["content"]))
+
+        result = self._agent.invoke(
+            {"messages": [*history_messages, HumanMessage(content=message)]}
+        )
         messages = result.get("messages", [])
 
         answer = ""
