@@ -36,5 +36,5 @@
 
 - [to-do] Corrective strategies
   - [done] Implement MMR
-    - in ./src/vector_store/store.py : `fetch_k = 30` for fetching 30 candidates and `lambda_mult = 0.7` to balance relevancy v/s diversity (0 -> pure diversity, 1 -> pure similarity)
+    - in `./src/vector_store/store.py` : `fetch_k = 30` for fetching 30 candidates and `lambda_mult = 0.7` to balance relevancy v/s diversity (0 -> pure diversity, 1 -> pure similarity)
   - [next] Better chunking
