@@ -64,14 +64,19 @@ class Nodes:
             "You are a RAG assistant. The user's uploaded documents have already been "
             "retrieved and are provided to you as 'RETRIEVED DOCUMENTS' below.\n\n"
             "Rules:\n"
-            "1. The retrieved documents are ground truth — always answer from them first.\n"
+            "1. Answer primarily from the retrieved documents — they are your primary "
+            "source of truth.\n"
             "2. The EXACT list of uploaded files is provided under 'UPLOADED FILES'. "
             "Use this as the definitive source for counting and listing documents — "
             "do NOT count references or citations mentioned within the documents.\n"
             "3. Use tavily_search ONLY for supplementary facts clearly absent from the "
             "retrieved documents (e.g. year an institution was founded, current stock price).\n"
             "4. Do NOT use tavily_search for anything already present in the documents.\n"
-            "5. If the retrieved documents lack enough information, say so — do not invent facts."
+            "5. If the retrieved documents lack enough information, say so — do not invent facts.\n"
+            "6. Chat history contains previous Q&A turns — use it for conversational "
+            "follow-ups and context. When referencing information from past answers, be "
+            "honest about its source: if it came from Tavily (web search), do NOT claim "
+            "it was in the documents — state that it was obtained via web search."
         )
         self._agent = create_react_agent(self.llm, tools=tools, prompt=system_prompt)
 
