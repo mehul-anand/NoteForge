@@ -46,5 +46,17 @@ class DocumentHandler:
         loader = PyPDFLoader(str(file_path))
         return loader.load()
 
+    # def doc_splitter(self, documents: List[Document]) -> List[Document]:
+    #     return self.splitter.split_documents(documents)
+
     def doc_splitter(self, documents: List[Document]) -> List[Document]:
-        return self.splitter.split_documents(documents)
+        chunks = self.splitter.split_documents(documents)
+        return [c for c in chunks if not self._is_reference_chunk(c)]
+
+    def _is_reference_chunk(self, chunk: Document) -> bool:
+        text = chunk.page_content.strip()
+        lines = text.split("\n")
+        # A chunk is likely a reference list if most lines start with [N] or look
+        # like bibliography entries — short lines with years in brackets
+        bracket_lines = sum(1 for l in lines if l.strip().startswith("["))
+        return bracket_lines > len(lines) * 0.5
