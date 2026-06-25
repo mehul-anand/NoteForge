@@ -20,7 +20,7 @@ class Config:
     # Increased from 500/50 → larger chunks capture full paper metadata
     # (title, authors, institution) in one chunk instead of fragmenting it
     CHUNK_SIZE = 2500
-    CHUNK_OVERLAP = 150
+    CHUNK_OVERLAP = 200
 
     # Retriever config
     # Increased from 4 → ensures chunks from ALL uploaded papers are returned
