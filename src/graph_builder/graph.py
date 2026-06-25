@@ -1,5 +1,7 @@
 """Graph Builder"""
 
+from typing import List
+
 from langgraph.graph import END, START, StateGraph
 
 from src.nodes.react_node import Nodes
@@ -22,9 +24,6 @@ class GraphBuilder:
         'retrieve' always runs first — mandatory, no agent decision involved.
         'agent' receives pre-fetched docs from state and only has Tavily
         for supplementary lookups.
-
-        Old broken architecture was: START → agent → END
-        (agent could skip retrieval entirely and go straight to Tavily)
         """
         builder = StateGraph(State)
 
@@ -38,8 +37,8 @@ class GraphBuilder:
         self.graph = builder.compile()
         return self.graph
 
-    def run(self, question: str) -> dict:
+    def run(self, question: str, source_files: List[str] = []) -> dict:
         if self.graph is None:
             self.build()
-        initial_state = State(question=question)
+        initial_state = State(question=question, source_files=source_files)
         return self.graph.invoke(initial_state)

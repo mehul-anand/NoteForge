@@ -10,3 +10,7 @@ class State(BaseModel):
     question: str
     retrieved_docs: List[Document] = []
     answer: str = ""
+    # Ground truth list of uploaded filenames — passed from streamlit into every
+    # graph run so the agent always knows what files exist, regardless of what
+    # the retriever happens to return for a given query.
+    source_files: List[str] = []

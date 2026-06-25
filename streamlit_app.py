@@ -50,8 +50,13 @@ def ingest_documents():
 
         status.write(f"Embedding {len(chunks)} chunks …")
         vs = VectorStore()
-        vs.create_retriever(chunks)  # fixed: was create_retreiver (typo)
+        vs.create_retriever(chunks)
         st.session_state.retriever = vs.get_retriever()
+
+        # Store ground-truth file list — passed into every graph run so the
+        # agent always knows exactly what was uploaded, regardless of what
+        # retrieval returns for a given query.
+        st.session_state.source_files = [pdf.name for pdf in pdfs]
 
         status.write("Building graph …")
         llm = Config.get_llm()
@@ -114,7 +119,10 @@ if prompt := st.chat_input("Ask about your documents …"):
     else:
         with st.chat_message("assistant"):
             with st.spinner("Thinking …"):
-                result = st.session_state.graph.run(prompt)
+                result = st.session_state.graph.run(
+                    prompt,
+                    source_files=st.session_state.get("source_files", []),
+                )
                 answer = result.get("answer", "No answer generated.")
             st.markdown(answer)
 

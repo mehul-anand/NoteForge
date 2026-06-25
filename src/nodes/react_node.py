@@ -23,7 +23,23 @@ class Nodes:
         The agent never decides whether to retrieve; it always receives docs.
         """
         docs = self.retriever.invoke(state.question)
-        return State(question=state.question, retrieved_docs=docs)
+        retrieved_docs_arr = []
+        for doc in docs:
+            retrieved_docs_arr.append(Path(doc.metadata.get("source", " ")).name)
+        retrieved_sources_set = set(retrieved_docs_arr)
+
+        for filename in state.source_files:
+            if filename not in retrieved_sources_set:
+                stem = Path(filename).stem
+                extra = self.retriever.invoke(stem)
+                if extra:
+                    docs.extend(extra[:2])  # taking out top 2 chunks
+
+        return State(
+            question=state.question,
+            retrieved_docs=docs,
+            source_files=state.source_files,  # pass through unchanged
+        )
 
     def _build_tools(self) -> List[Tool]:
         """
@@ -48,9 +64,9 @@ class Nodes:
             "retrieved and are provided to you as 'RETRIEVED DOCUMENTS' below.\n\n"
             "Rules:\n"
             "1. The retrieved documents are ground truth — always answer from them first.\n"
-            "2. Count distinct uploaded documents by counting distinct source filenames "
-            "in the retrieved passages — do NOT count references or citations mentioned "
-            "within the documents.\n"
+            "2. The EXACT list of uploaded files is provided under 'UPLOADED FILES'. "
+            "Use this as the definitive source for counting and listing documents — "
+            "do NOT count references or citations mentioned within the documents.\n"
             "3. Use tavily_search ONLY for supplementary facts clearly absent from the "
             "retrieved documents (e.g. year an institution was founded, current stock price).\n"
             "4. Do NOT use tavily_search for anything already present in the documents.\n"
@@ -74,7 +90,18 @@ class Nodes:
             )
         context = "\n\n".join(context_parts)
 
+        # Inject the ground-truth file list so the agent always knows what was
+        # uploaded, even if retrieval didn't return chunks from every document.
+        uploaded_files_str = (
+            ", ".join(state.source_files)
+            if state.source_files
+            else "unknown (not provided)"
+        )
+
         message = (
+            f"=== UPLOADED FILES ===\n"
+            f"The user uploaded exactly these {len(state.source_files)} file(s): "
+            f"{uploaded_files_str}\n\n"
             f"=== RETRIEVED DOCUMENTS ===\n\n"
             f"{context}\n\n"
             f"=== QUESTION ===\n\n"
@@ -92,6 +119,7 @@ class Nodes:
 
         return State(
             question=state.question,
-            retrieved_docs=state.retrieved_docs,  # preserved for auditability
+            retrieved_docs=state.retrieved_docs,
+            source_files=state.source_files,
             answer=answer,
         )
