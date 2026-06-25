@@ -17,28 +17,55 @@ class Nodes:
         self.llm = llm
         self._agent = None
 
+    def expand_query(self, state: State) -> State:
+        prompt = (
+            "You are a query decomposition assistant. Break the user's "
+            "question into simple, self-contained sub-questions — one per "
+            "line. Each sub-query should target a single piece of information "
+            "that can be retrieved from a document.\n\n"
+            "If the question is already simple and focused, return it unchanged "
+            "(one line).\n\n"
+            "User question: {question}"
+        )
+        response = self.llm.invoke(prompt.format(question=state.question))
+        sub_queries = [
+            q.strip() for q in response.content.strip().split("\n") if q.strip()
+        ]
+        return State(
+            question=state.question,
+            sub_queries=sub_queries,
+            source_files=state.source_files,
+            chat_history=state.chat_history,
+        )
+
     def retrieve_docs(self, state: State) -> State:
         """
-        Dedicated retrieval node — always runs before the agent.
-        The agent never decides whether to retrieve; it always receives docs.
+        Dedicated retrieval node — always runs after expand_query.
+        Iterates over sub_queries for comprehensive document coverage.
         """
-        docs = self.retriever.invoke(state.question)
-        retrieved_docs_arr = []
-        for doc in docs:
-            retrieved_docs_arr.append(Path(doc.metadata.get("source", " ")).name)
-        retrieved_sources_set = set(retrieved_docs_arr)
+        all_docs = []
+        seen = set()
+        for query in state.sub_queries:
+            docs = self.retriever.invoke(query)
+            for doc in docs:
+                sig = doc.page_content[:200]
+                if sig not in seen:
+                    seen.add(sig)
+                    all_docs.append(doc)
 
+        retrieved_sources = set()
+        for doc in all_docs:
+            retrieved_sources.add(Path(doc.metadata.get("source", " ")).name)
         for filename in state.source_files:
-            if filename not in retrieved_sources_set:
-                stem = Path(filename).stem
-                extra = self.retriever.invoke(stem)
+            if filename not in retrieved_sources:
+                extra = self.retriever.invoke(Path(filename).stem)
                 if extra:
-                    docs.extend(extra[:2])  # taking out top 2 chunks
+                    all_docs.extend(extra[:2])
 
         return State(
             question=state.question,
-            retrieved_docs=docs,
-            source_files=state.source_files,  # pass through unchanged
+            retrieved_docs=all_docs,
+            source_files=state.source_files,
             chat_history=state.chat_history,
         )
 

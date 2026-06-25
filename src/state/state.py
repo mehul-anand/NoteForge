@@ -15,3 +15,4 @@ class State(BaseModel):
     # the retriever happens to return for a given query.
     source_files: List[str] = []
     chat_history: List[Dict[str, str]] = []
+    sub_queries: List[str] = []

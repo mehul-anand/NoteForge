@@ -19,18 +19,19 @@ class GraphBuilder:
 
     def build(self):
         """
-        Architecture: START → retrieve → agent → END
+        Architecture: START → expand_query → retrieve → agent → END
 
-        'retrieve' always runs first — mandatory, no agent decision involved.
+        'expand_query' decomposes complex questions into focused sub-queries.
+        'retrieve' iterates over each sub-query for comprehensive coverage.
         'agent' receives pre-fetched docs from state and only has Tavily
         for supplementary lookups.
         """
         builder = StateGraph(State)
-
+        builder.add_node("expand_query", self.nodes.expand_query)
         builder.add_node("retrieve", self.nodes.retrieve_docs)
         builder.add_node("agent", self.nodes.agent_node)
-
-        builder.set_entry_point("retrieve")
+        builder.set_entry_point("expand_query")
+        builder.add_edge("expand_query", "retrieve")
         builder.add_edge("retrieve", "agent")
         builder.add_edge("agent", END)
 
