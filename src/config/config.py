@@ -1,4 +1,5 @@
 import os
+from functools import cache
 
 from dotenv import load_dotenv
 from langchain.chat_models import init_chat_model
@@ -27,6 +28,7 @@ class Config:
     RETRIEVER_K = 10
 
     @classmethod
+    @cache
     def get_llm(cls):
         """Initialise and return the LLM Model"""
         return init_chat_model(cls.LLM_MODEL)
