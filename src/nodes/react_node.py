@@ -163,5 +163,6 @@ class Nodes:
             question=state.question,
             retrieved_docs=state.retrieved_docs,
             source_files=state.source_files,
+            chat_history=state.chat_history,
             answer=answer,
         )
