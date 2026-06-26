@@ -37,4 +37,12 @@
 - [to-do] Corrective strategies
   - [done] Implement MMR
     - in `./src/vector_store/store.py` : `fetch_k = 30` for fetching 30 candidates and `lambda_mult = 0.7` to balance relevancy v/s diversity (0 -> pure diversity, 1 -> pure similarity)
-  - [next] Better chunking
+  - [done] Chat history — agent remembers conversation context across turns
+  - [done] Query decomposition — compound questions broken into sub-queries
+    for full document coverage
+  - [done] Source file injection — ground-truth file list fed to agent
+    for accurate doc counting
+  - [done] Tavily fallback — agent tries web search before giving up
+  - [next] Make decomposition prompt aware of uploaded file names
+    for per-document sub-query generation
+  - [next] Better PDF metadata extraction (authors, institutions)
