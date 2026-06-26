@@ -54,6 +54,21 @@ Additionally, compound questions like "intro + authors + institutes + year for a
 - Architecture: `START → expand_query → retrieve → agent → END`
 - Simple questions pass through unchanged (single sub-query)
 
+### 7. Removed reference chunk filter — generalized bot behavior
+
+- **File**: `src/document_ingestion/document_processor.py`
+- Removed `_is_reference_chunk` that silently dropped chunks where >50% of
+  lines started with `[` (academic bibliography format)
+- All content now indexed as-is; LLM naturally handles reference sections
+
+### 8. Tavily fallback chain — prevent "don't know" before trying web search
+
+- **File**: `src/nodes/react_node.py`
+- Added rule 0: forced fallback chain — try Tavily for any external/real-time
+  information before saying "I don't know"
+- Prevents the agent from stopping at "not in documents → give up" for queries
+  like weather, time, and current events
+
 ## Verification
 
 - **Chat history test:**
@@ -67,3 +82,8 @@ Additionally, compound questions like "intro + authors + institutes + year for a
   - Q: "Give me a brief intro about all the papers I gave, also how many papers did I give ? can you also tell me the institutes involved in each paper and the authors there and finally you give me the year of establishment of each of these institutions"
   - A: Correctly returned all 4 papers. Paper 1 had full authors + Institute (IISc 1909). Papers 2-3 had partial authors. Paper 4 authors missing. Institute names + establishment years for IISc (1909), UC Berkeley (1868), and Allen AI (2014) retrieved via Tavily.
   - Expected: sub-queries improved coverage vs single-query retrieval, but some author info still missed — decomposition prompt should be made aware of source_files for per-document sub-query generation
+
+- **Tavily fallback test:**
+  - Q: "what is the time and weather now?"
+  - Before fix: "I don't have that information in the retrieved documents"
+  - After fix: Tavily returns current weather/time
