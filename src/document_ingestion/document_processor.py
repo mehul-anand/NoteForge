@@ -4,8 +4,8 @@ from pathlib import Path
 from typing import List, Union
 
 from langchain_community.document_loaders import (
+    PyMuPDFLoader,
     PyPDFDirectoryLoader,
-    PyPDFLoader,
     TextLoader,
     WebBaseLoader,
 )
@@ -46,7 +46,7 @@ class DocumentHandler:
 
     def pdf_loader(self, file_path: Union[str, Path]) -> List[Document]:
         """Load document(s) from a PDF file"""
-        loader = PyPDFLoader(str(file_path))
+        loader = PyMuPDFLoader(str(file_path))
         return loader.load()
 
     def doc_splitter(self, documents: List[Document]) -> List[Document]:

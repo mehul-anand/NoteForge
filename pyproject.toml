@@ -21,4 +21,5 @@ dependencies = [
     "tavily-python>=0.5.0",
     "wikipedia>=1.4.0",
     "langchain-tavily>=0.2.18",
+    "pymupdf>=1.27.2.3",
 ]
