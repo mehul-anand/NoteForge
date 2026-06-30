@@ -69,6 +69,17 @@ Additionally, compound questions like "intro + authors + institutes + year for a
 - Prevents the agent from stopping at "not in documents → give up" for queries
   like weather, time, and current events
 
+### 9. File-aware query decomposition — per-document sub-queries
+
+- **File**: `src/nodes/react_node.py`
+- `expand_query` now receives `state.source_files` and includes the
+  uploaded file list in the LLM prompt
+- LLM generates targeted sub-queries per file (e.g. "authors of
+  HyDE_2025.pdf") instead of vague ones
+- Fixes the "Trovato et al." hallucination — retrieval targets the
+  specific document's author section rather than picking up
+  header/footer artifacts from a mismatched chunk
+
 ## Verification
 
 - **Chat history test:**
@@ -82,6 +93,12 @@ Additionally, compound questions like "intro + authors + institutes + year for a
   - Q: "Give me a brief intro about all the papers I gave, also how many papers did I give ? can you also tell me the institutes involved in each paper and the authors there and finally you give me the year of establishment of each of these institutions"
   - A: Correctly returned all 4 papers. Paper 1 had full authors + Institute (IISc 1909). Papers 2-3 had partial authors. Paper 4 authors missing. Institute names + establishment years for IISc (1909), UC Berkeley (1868), and Allen AI (2014) retrieved via Tavily.
   - Expected: sub-queries improved coverage vs single-query retrieval, but some author info still missed — decomposition prompt should be made aware of source_files for per-document sub-query generation
+
+- **File-aware decomposition test:**
+  - Q: "Give me authors of all papers"
+  - Before: HyDE returned "Trovato et al." (LaTeX footer artifact)
+  - After: HyDE returns "Fangjian Lei, Mariam El Mezouar, Shayan
+    Noei, Ying Zou" (correct, from page 0)
 
 - **Tavily fallback test:**
   - Q: "what is the time and weather now?"

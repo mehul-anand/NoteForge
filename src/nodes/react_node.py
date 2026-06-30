@@ -18,16 +18,24 @@ class Nodes:
         self._agent = None
 
     def expand_query(self, state: State) -> State:
+        files_str = ", ".join(state.source_files) if state.source_files else "unknown"
         prompt = (
             "You are a query decomposition assistant. Break the user's "
             "question into simple, self-contained sub-questions — one per "
             "line. Each sub-query should target a single piece of information "
             "that can be retrieved from a document.\n\n"
+            "The user has uploaded these files:\n"
+            "{files}\n\n"
+            "If the question mentions specific documents or topics, generate "
+            "one sub-query per file that is likely relevant. Always include "
+            "the filename explicitly in the sub-query where applicable.\n\n"
             "If the question is already simple and focused, return it unchanged "
             "(one line).\n\n"
             "User question: {question}"
         )
-        response = self.llm.invoke(prompt.format(question=state.question))
+        response = self.llm.invoke(
+            prompt.format(files=files_str, question=state.question)
+        )
         sub_queries = [
             q.strip() for q in response.content.strip().split("\n") if q.strip()
         ]
@@ -35,6 +43,7 @@ class Nodes:
             question=state.question,
             sub_queries=sub_queries,
             source_files=state.source_files,
+            doc_summaries=state.doc_summaries,
             chat_history=state.chat_history,
         )
 
@@ -66,6 +75,7 @@ class Nodes:
             question=state.question,
             retrieved_docs=all_docs,
             source_files=state.source_files,
+            doc_summaries=state.doc_summaries,
             chat_history=state.chat_history,
         )
 
@@ -130,8 +140,19 @@ class Nodes:
             )
         context = "\n\n".join(context_parts)
 
-        # Inject the ground-truth file list so the agent always knows what was
-        # uploaded, even if retrieval didn't return chunks from every document.
+        # Inject doc summaries so the agent always sees metadata (authors,
+        # titles, doc type) for every file regardless of retrieval quality.
+        summaries_parts = []
+        for fname in state.source_files:
+            summary = state.doc_summaries.get(fname, "")
+            if summary:
+                summaries_parts.append(f"  {fname}: {summary}")
+        summaries_block = (
+            "\n".join(summaries_parts)
+            if summaries_parts
+            else "  (no summaries available)"
+        )
+
         uploaded_files_str = (
             ", ".join(state.source_files)
             if state.source_files
@@ -139,6 +160,8 @@ class Nodes:
         )
 
         message = (
+            f"=== DOCUMENT SUMMARIES ===\n"
+            f"{summaries_block}\n\n"
             f"=== UPLOADED FILES ===\n"
             f"The user uploaded exactly these {len(state.source_files)} file(s): "
             f"{uploaded_files_str}\n\n"
@@ -170,6 +193,7 @@ class Nodes:
             question=state.question,
             retrieved_docs=state.retrieved_docs,
             source_files=state.source_files,
+            doc_summaries=state.doc_summaries,
             chat_history=state.chat_history,
             answer=answer,
         )

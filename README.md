@@ -43,6 +43,6 @@
   - [done] Source file injection — ground-truth file list fed to agent
     for accurate doc counting
   - [done] Tavily fallback — agent tries web search before giving up
-  - [next] Make decomposition prompt aware of uploaded file names
-    for per-document sub-query generation
+  - [done] File-aware decomposition — per-document sub-queries
+    using uploaded file names
   - [next] Better PDF metadata extraction (authors, institutions)

@@ -25,7 +25,7 @@ class Config:
 
     # Retriever config
     # Increased from 4 → ensures chunks from ALL uploaded papers are returned
-    RETRIEVER_K = 10
+    RETRIEVER_K = 15
 
     @classmethod
     @cache

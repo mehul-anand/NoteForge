@@ -58,8 +58,11 @@ def ingest_documents():
         # retrieval returns for a given query.
         st.session_state.source_files = [pdf.name for pdf in pdfs]
 
-        status.write("Building graph …")
+        status.write("Extracting document summaries …")
         llm = Config.get_llm()
+        st.session_state.doc_summaries = handler.extract_summaries(all_docs, llm)
+
+        status.write("Building graph …")
         builder = GraphBuilder(st.session_state.retriever, llm)
         builder.build()
         st.session_state.graph = builder
@@ -122,6 +125,7 @@ if prompt := st.chat_input("Ask about your documents …"):
                 result = st.session_state.graph.run(
                     prompt,
                     source_files=st.session_state.get("source_files", []),
+                    doc_summaries=st.session_state.get("doc_summaries", {}),
                     chat_history=st.session_state.messages[:-1],
                 )
                 answer = result.get("answer", "No answer generated.")

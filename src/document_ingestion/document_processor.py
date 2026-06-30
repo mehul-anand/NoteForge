@@ -51,3 +51,28 @@ class DocumentHandler:
 
     def doc_splitter(self, documents: List[Document]) -> List[Document]:
         return self.splitter.split_documents(documents)
+
+    def extract_summaries(self, documents: List[Document], llm) -> dict:
+        grouped = {}
+        for doc in documents:
+            src = Path(doc.metadata.get("source", "")).name
+            page = doc.metadata.get("page", 0)
+            if src not in grouped or page < grouped[src]["page"]:
+                grouped[src] = {"page": page, "content": doc.page_content[:2000]}
+
+        summaries = {}
+        for filename, info in grouped.items():
+            content = info["content"]
+            prompt = (
+                "Summarize what this document is about in 1 sentence. "
+                "Focus on the topic, document type, and key entities "
+                "(people, organizations, dates). "
+                "Start directly with the summary — no preamble.\n\n"
+                f"Document content:\n{content}"
+            )
+            try:
+                resp = llm.invoke(prompt)
+                summaries[filename] = resp.content.strip()
+            except Exception:
+                summaries[filename] = ""
+        return summaries
