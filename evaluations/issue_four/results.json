@@ -1,0 +1,174 @@
+{
+  "timestamp": "2026-07-06T01:22:33.613121",
+  "config": {
+    "k": 15,
+    "chunk_size": 2500,
+    "chunk_overlap": 200,
+    "model": "gpt-4o-mini",
+    "retriever": "FAISS + MMR (lambda_mult=0.7, fetch_k=30)"
+  },
+  "aggregate": {
+    "avg_precision_at_15": 0.694,
+    "avg_recall_at_15": 0.875,
+    "avg_mrr": 0.958,
+    "avg_factual_accuracy": 0.875
+  },
+  "results": [
+    {
+      "id": "hyde_authors",
+      "query": "Who wrote the HyDE paper?",
+      "retrieval_metrics": {
+        "precision_at_15": 0.733,
+        "recall_at_15": 1.0,
+        "mrr": 1.0
+      },
+      "generation_metrics": {
+        "factual_accuracy": 1.0,
+        "answer": "The HyDE paper, titled \"Never Come Up Empty: Adaptive HyDE Retrieval for Improving LLM Developer Support,\" was authored by Fangjian Lei, Mariam El Mezouar, Shayan Noei, and Ying Zou from Queen\u2019s University and the Royal Military College of Canada."
+      }
+    },
+    {
+      "id": "crag_authors",
+      "query": "Who wrote the CRAG paper?",
+      "retrieval_metrics": {
+        "precision_at_15": 0.733,
+        "recall_at_15": 1.0,
+        "mrr": 1.0
+      },
+      "generation_metrics": {
+        "factual_accuracy": 1.0,
+        "answer": "The CRAG paper was written by researchers Shi-Qi Yan, Jia-Chen Gu, Yun Zhu, and Zhen-Hua Ling."
+      }
+    },
+    {
+      "id": "cbf_uav_authors",
+      "query": "Who wrote the CBF UAV paper?",
+      "retrieval_metrics": {
+        "precision_at_15": 0.733,
+        "recall_at_15": 1.0,
+        "mrr": 1.0
+      },
+      "generation_metrics": {
+        "factual_accuracy": 1.0,
+        "answer": "The CBF UAV paper was authored by Manan Tayal, Rajpal Singh, Jishnu Keshavan, and Shishir Kolathaya."
+      }
+    },
+    {
+      "id": "cbf_ugv_authors",
+      "query": "Who wrote the CBF UGV paper?",
+      "retrieval_metrics": {
+        "precision_at_15": 0.467,
+        "recall_at_15": 1.0,
+        "mrr": 1.0
+      },
+      "generation_metrics": {
+        "factual_accuracy": 0.5,
+        "answer": "The CBF UGV paper was authored by Phani Thontepu and colleagues."
+      }
+    },
+    {
+      "id": "hyde_title",
+      "query": "What is the title of the HyDE paper?",
+      "retrieval_metrics": {
+        "precision_at_15": 0.8,
+        "recall_at_15": 1.0,
+        "mrr": 1.0
+      },
+      "generation_metrics": {
+        "factual_accuracy": 1.0,
+        "answer": "The title of the HyDE paper is \"Never Come Up Empty: Adaptive HyDE Retrieval for Improving LLM Developer Support.\""
+      }
+    },
+    {
+      "id": "crag_title",
+      "query": "What is the title of the CRAG paper?",
+      "retrieval_metrics": {
+        "precision_at_15": 0.733,
+        "recall_at_15": 1.0,
+        "mrr": 1.0
+      },
+      "generation_metrics": {
+        "factual_accuracy": 1.0,
+        "answer": "The title of the CRAG paper is \"Corrective Retrieval Augmented Generation.\""
+      }
+    },
+    {
+      "id": "cbf_uav_year",
+      "query": "What year was the CBF UAV paper published?",
+      "retrieval_metrics": {
+        "precision_at_15": 0.667,
+        "recall_at_15": 1.0,
+        "mrr": 1.0
+      },
+      "generation_metrics": {
+        "factual_accuracy": 1.0,
+        "answer": "The CBF UAV paper was published in 2024."
+      }
+    },
+    {
+      "id": "cbf_ugv_year",
+      "query": "What year was the CBF UGV paper published?",
+      "retrieval_metrics": {
+        "precision_at_15": 0.333,
+        "recall_at_15": 1.0,
+        "mrr": 1.0
+      },
+      "generation_metrics": {
+        "factual_accuracy": 1.0,
+        "answer": "The CBF UGV paper was published in 2023."
+      }
+    },
+    {
+      "id": "institutes_involved",
+      "query": "What institutes are involved in these papers?",
+      "retrieval_metrics": {
+        "precision_at_15": 1.0,
+        "recall_at_15": 0.5,
+        "mrr": 1.0
+      },
+      "generation_metrics": {
+        "factual_accuracy": 0.5,
+        "answer": "The documents you provided mention the following institutes:\n\n1. **CBF_UAV_2024.pdf**:\n   - Crazyflie 2.1 platform used for experiments, but no specific institute is mentioned for the authors in the retrieved content.\n\n2. **CBF_UGV_2023.pdf**:\n   - Indian Institute of Science (IISc), Bengaluru, specifically the Robert Bosch Center for Cyber Physical Systems (RBCCPS).\n\n3. **CRAG_2024.pdf**:\n   - University of Science and Technology of China (main institution for the first author).\n   - University of California, Los Angeles (UCLA).\n   - Google DeepMind.\n\n4. **HyDE_2025.pdf**:\n   - Queen\u2019s University (specific mention of authors from here).\n   - Royal Military College of Canada.\n\nThese institutes are involved in the research and development outlined within the respective papers."
+      }
+    },
+    {
+      "id": "how_many_papers",
+      "query": "How many papers did I upload?",
+      "retrieval_metrics": {
+        "precision_at_15": 1.0,
+        "recall_at_15": 0.5,
+        "mrr": 1.0
+      },
+      "generation_metrics": {
+        "factual_accuracy": 1.0,
+        "answer": "You uploaded exactly 4 papers."
+      }
+    },
+    {
+      "id": "ugv_abstract",
+      "query": "What was the UGV paper about?",
+      "retrieval_metrics": {
+        "precision_at_15": 0.133,
+        "recall_at_15": 1.0,
+        "mrr": 0.5
+      },
+      "generation_metrics": {
+        "factual_accuracy": 1.0,
+        "answer": "The UGV paper titled \"CBF_UGV_2023\" proposes a novel class of Control Barrier Functions (CBFs) specifically designed for Unmanned Ground Vehicles (UGVs) to enhance their collision avoidance capabilities, especially when dealing with moving obstacles. Authored by Phani Thontepu and colleagues, the research addresses significant challenges in existing CBF approaches that struggle with the nonholonomic nature of vehicles and dynamic obstacles. The proposed CBFs are validated through simulations involving TurtleBot3 and F1Tenth, demonstrating their effectiveness in ensuring safe operation."
+      }
+    },
+    {
+      "id": "all_papers_compound",
+      "query": "Give me the authors and titles of all papers",
+      "retrieval_metrics": {
+        "precision_at_15": 1.0,
+        "recall_at_15": 0.5,
+        "mrr": 1.0
+      },
+      "generation_metrics": {
+        "factual_accuracy": 0.5,
+        "answer": "Here are the authors and titles of all the papers:\n\n1. **Title**: \"Control Barrier Functions in Dynamic UAVs for Kinematic Obstacle Avoidance: A Collision Cone Approach\"\n   - **Authors**: Manan Tayal, Rajpal Singh, Jishnu Keshavan, Shishir Kolathaya\n\n2. **Title**: \"Control Barrier Functions for Unmanned Ground Vehicles\"\n   - **Authors**: Phani Thontepu and colleagues\n\n3. **Title**: \"Corrective Retrieval Augmented Generation\"\n   - **Authors**: Shi-Qi Yan, Jia-Chen Gu, Yun Zhu, Zhen-Hua Ling\n\n4. **Title**: \"Never Come Up Empty: Adaptive HyDE Retrieval for Improving LLM Developer Support\"\n   - **Authors**: Fangjian Lei, Mariam El Mezouar, Shayan Noei, Ying Zou"
+      }
+    }
+  ]
+}
