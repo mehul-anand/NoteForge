@@ -47,14 +47,44 @@ class Nodes:
             chat_history=state.chat_history,
         )
 
+    def rewrite_queries(self, state: State) -> State:
+        rewritten = []
+        for q in state.sub_queries:
+            prompt = (
+                "Rewrite the following search query to improve vector embedding "
+                "similarity with relevant document text. Expand abbreviations and "
+                "acronyms to their full forms. Add domain-relevant terminology "
+                "without inventing specific facts. Do NOT answer the query — only "
+                "expand and clarify it. Return ONLY the rewritten query.\n\n"
+                f"Original: {q}"
+            )
+            try:
+                resp = self.llm.invoke(prompt)
+                rewritten_q = resp.content.strip()
+                rewritten.append(rewritten_q if rewritten_q else q)
+            except Exception:
+                rewritten.append(q)
+
+        return State(
+            question=state.question,
+            sub_queries=state.sub_queries,
+            rewritten_queries=rewritten,
+            source_files=state.source_files,
+            doc_summaries=state.doc_summaries,
+            chat_history=state.chat_history,
+        )
+
     def retrieve_docs(self, state: State) -> State:
         """
-        Dedicated retrieval node — always runs after expand_query.
-        Iterates over sub_queries for comprehensive document coverage.
+        Dedicated retrieval node — runs after rewrite_queries.
+        Iterates over rewritten_queries for comprehensive document coverage.
         """
         all_docs = []
         seen = set()
-        for query in state.sub_queries:
+        queries = (
+            state.rewritten_queries if state.rewritten_queries else state.sub_queries
+        )
+        for query in queries:
             docs = self.retriever.invoke(query)
             for doc in docs:
                 sig = doc.page_content[:200]

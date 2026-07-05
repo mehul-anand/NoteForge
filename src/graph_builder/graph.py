@@ -19,19 +19,22 @@ class GraphBuilder:
 
     def build(self):
         """
-        Architecture: START → expand_query → retrieve → agent → END
+        Architecture: START → expand_query → rewrite_queries → retrieve → agent → END
 
         'expand_query' decomposes complex questions into focused sub-queries.
-        'retrieve' iterates over each sub-query for comprehensive coverage.
+        'rewrite_queries' rewrites each sub-query to improve embedding similarity.
+        'retrieve' iterates over rewritten queries for comprehensive coverage.
         'agent' receives pre-fetched docs from state and only has Tavily
         for supplementary lookups.
         """
         builder = StateGraph(State)
         builder.add_node("expand_query", self.nodes.expand_query)
+        builder.add_node("rewrite_queries", self.nodes.rewrite_queries)
         builder.add_node("retrieve", self.nodes.retrieve_docs)
         builder.add_node("agent", self.nodes.agent_node)
         builder.set_entry_point("expand_query")
-        builder.add_edge("expand_query", "retrieve")
+        builder.add_edge("expand_query", "rewrite_queries")
+        builder.add_edge("rewrite_queries", "retrieve")
         builder.add_edge("retrieve", "agent")
         builder.add_edge("agent", END)
 

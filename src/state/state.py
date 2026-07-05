@@ -20,3 +20,4 @@ class State(BaseModel):
     doc_summaries: Dict[str, str] = {}
     chat_history: List[Dict[str, str]] = []
     sub_queries: List[str] = []
+    rewritten_queries: List[str] = []
