@@ -1,4 +1,5 @@
 import os
+import tempfile
 from collections import Counter
 from pathlib import Path
 
@@ -19,29 +20,65 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 
 
-def ingest_documents():
-    data_dir = Path("data")
-    if not data_dir.is_dir():
-        st.info("Create a data/ folder with PDFs to get started.")
-        return
+def clear_session_state():
+    for key in [
+        "graph",
+        "retriever",
+        "source_files",
+        "doc_summaries",
+        "chunk_counts",
+        "messages",
+    ]:
+        st.session_state.pop(key, None)
+        st.session_state.messages = []
 
-    pdfs = sorted(data_dir.glob("*.pdf")) + sorted(data_dir.glob("*.txt"))
-    if not pdfs:
-        st.info("Drop PDFs into the data/ folder and restart.")
-        return
 
+def ingest_documents(uploaded_files=None):
     handler = DocumentHandler()
+
+    if uploaded_files:
+        pdfs = uploaded_files
+        source_from_upload = True
+    else:
+        data_dir = Path("data")
+        if not data_dir.is_dir():
+            st.info("Upload PDFs using the sidebar to get started.")
+            return
+        pdfs = sorted(data_dir.glob("*.pdf")) + sorted(data_dir.glob("*.txt"))
+        if not pdfs:
+            st.info("Upload PDFs using the sidebar to get started.")
+            return
+        source_from_upload = False
+
     all_docs = []
+    temp_paths = []
 
     with st.status("📄 Loading documents…", expanded=True) as status:
         for pdf in pdfs:
-            status.write(f"Loading {pdf.name} …")
+            if source_from_upload:
+                suffix = Path(pdf.name).suffix
+                with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+                    tmp.write(pdf.getvalue())
+                    temp_path = tmp.name
+                temp_paths.append(temp_path)
+                file_label = pdf.name
+            else:
+                temp_path = str(pdf)
+                file_label = pdf.name
+
+            status.write(f"Loading {file_label} …")
+            suffix = Path(file_label).suffix
             loaded = (
-                handler.pdf_loader(str(pdf))
-                if pdf.suffix == ".pdf"
-                else handler.text_loader(str(pdf))
+                handler.pdf_loader(temp_path)
+                if suffix == ".pdf"
+                else handler.text_loader(temp_path)
             )
             all_docs.extend(loaded)
+
+        if source_from_upload:
+            status.write("Cleaning up temporary files …")
+            for path in temp_paths:
+                os.unlink(path)
 
         status.write("Splitting into chunks …")
         chunks = handler.doc_splitter(all_docs)
@@ -53,10 +90,8 @@ def ingest_documents():
         vs.create_retriever(chunks)
         st.session_state.retriever = vs.get_retriever()
 
-        # Store ground-truth file list — passed into every graph run so the
-        # agent always knows exactly what was uploaded, regardless of what
-        # retrieval returns for a given query.
-        st.session_state.source_files = [pdf.name for pdf in pdfs]
+        filenames = [pdf.name for pdf in pdfs]
+        st.session_state.source_files = filenames
 
         status.write("Extracting document summaries …")
         llm = Config.get_llm()
@@ -94,7 +129,19 @@ with st.sidebar:
 
     st.divider()
 
-    if api_key and "graph" not in st.session_state:
+    uploaded_files = st.file_uploader(
+        "Upload PDFs",
+        type="pdf",
+        accept_multiple_files=True,
+    )
+
+    if uploaded_files and st.button("📄 Process Documents", type="primary"):
+        clear_session_state()
+        ingest_documents(uploaded_files)
+
+    st.divider()
+
+    if api_key and "graph" not in st.session_state and not uploaded_files:
         ingest_documents()
 
     if "chunk_counts" in st.session_state:
@@ -117,7 +164,7 @@ if prompt := st.chat_input("Ask about your documents …"):
 
     if "graph" not in st.session_state or st.session_state.graph is None:
         answer = (
-            "⚠️ No documents loaded. Add PDFs to the data/ folder and enter API keys."
+            "⚠️ No documents loaded. Upload PDFs using the sidebar and enter API keys."
         )
     else:
         with st.chat_message("assistant"):
