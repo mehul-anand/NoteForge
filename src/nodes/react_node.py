@@ -150,7 +150,10 @@ class Nodes:
             "6. Chat history contains previous Q&A turns — use it for conversational "
             "follow-ups and context. When referencing information from past answers, be "
             "honest about its source: if it came from Tavily (web search), do NOT claim "
-            "it was in the documents — state that it was obtained via web search."
+            "it was in the documents — state that it was obtained via web search.\n"
+            "7. For mathematical equations, use $...$ for inline and $$...$$ for block "
+            "equations (NOT \\(...\\) or \\[...\\]). This ensures proper rendering in "
+            "the markdown viewer."
         )
         self._agent = create_react_agent(self.llm, tools=tools, prompt=system_prompt)
 
