@@ -25,7 +25,7 @@ def clear_session_state():
         "graph",
         "retriever",
         "source_files",
-        "doc_summaries",
+        "paper_metadata",
         "chunk_counts",
         "messages",
     ]:
@@ -93,9 +93,9 @@ def ingest_documents(uploaded_files=None):
         filenames = [pdf.name for pdf in pdfs]
         st.session_state.source_files = filenames
 
-        status.write("Extracting document summaries …")
+        status.write("Extracting structured paper metadata …")
         llm = Config.get_llm()
-        st.session_state.doc_summaries = handler.extract_summaries(all_docs, llm)
+        st.session_state.paper_metadata = handler.extract_metadata(all_docs, llm)
 
         status.write("Building graph …")
         builder = GraphBuilder(st.session_state.retriever, llm)
@@ -172,7 +172,7 @@ if prompt := st.chat_input("Ask about your documents …"):
                 result = st.session_state.graph.run(
                     prompt,
                     source_files=st.session_state.get("source_files", []),
-                    doc_summaries=st.session_state.get("doc_summaries", {}),
+                    paper_metadata=st.session_state.get("paper_metadata", {}),
                     chat_history=st.session_state.messages[:-1],
                 )
                 answer = result.get("answer", "No answer generated.")

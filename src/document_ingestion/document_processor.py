@@ -1,7 +1,8 @@
 """Document processing module for loading and splitting documents"""
 
+import re
 from pathlib import Path
-from typing import List, Union
+from typing import Dict, List, Optional, Union
 
 from langchain_community.document_loaders import (
     PyMuPDFLoader,
@@ -11,8 +12,24 @@ from langchain_community.document_loaders import (
 )
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from pydantic import BaseModel, Field
 
 from src.config.config import Config
+
+
+class PaperMetadata(BaseModel):
+    """Structured metadata extracted from the first page of a document."""
+
+    title: str = ""
+    authors: List[str] = Field(default_factory=list)
+    affiliations: List[str] = Field(default_factory=list)
+    year: Optional[int] = None
+    venue: str = ""
+    methods: List[str] = Field(default_factory=list)
+    contributions: List[str] = Field(default_factory=list)
+    key_results: List[str] = Field(default_factory=list)
+    keywords: List[str] = Field(default_factory=list)
+    source: str = ""
 
 
 class DocumentHandler:
@@ -76,3 +93,75 @@ class DocumentHandler:
             except Exception:
                 summaries[filename] = ""
         return summaries
+
+    @staticmethod
+    def _fill_year(paper: "PaperMetadata", filename: str) -> "PaperMetadata":
+        """Fallback: pull the year from the filename (e.g. CBF_UAV_2024.pdf)."""
+        if paper.year is None:
+            match = re.search(r"(19[7-9]\d|20[0-2]\d)", filename)
+            if match:
+                paper.year = int(match.group(1))
+        return paper
+
+    def extract_metadata(self, documents: List[Document], llm) -> Dict[str, PaperMetadata]:
+        """Extract structured PaperMetadata per source file.
+
+        Groups loaded documents by source file, takes the first page (lowest
+        page number), and asks the LLM for structured output. Falls back to the
+        old 1-line summary if the structured call fails, so the pipeline never
+        returns nothing.
+        """
+        grouped = {}
+        for doc in documents:
+            src = Path(doc.metadata.get("source", "")).name
+            page = doc.metadata.get("page", 0)
+            if src not in grouped or page < grouped[src]["page"]:
+                grouped[src] = {"page": page, "content": doc.page_content[:3000]}
+
+        try:
+            structured_llm = llm.with_structured_output(PaperMetadata)
+        except Exception:
+            structured_llm = None
+
+        metadata = {}
+        for filename, info in grouped.items():
+            content = info["content"]
+            try:
+                if structured_llm is not None:
+                    prompt = (
+                        "Extract paper metadata from this first page of a "
+                        "document. Fill every field you can determine. "
+                        "affiliations = institutions/organizations the authors "
+                        "belong to. contributions = what the work proposes/does. "
+                        "key_results = concrete findings or validation outcomes. "
+                        "Use empty strings/lists and null year where the info is "
+                        f"absent or unclear. Do not invent facts.\n\nDocument content:\n{content}"
+                    )
+                    resp = structured_llm.invoke(prompt)
+                    paper = resp.model_dump()
+                    paper["source"] = filename
+                    paper = PaperMetadata(**paper)
+                else:
+                    paper = self._metadata_from_summary(filename, info["content"], llm)
+            except Exception:
+                paper = self._metadata_from_summary(filename, info["content"], llm)
+            self._fill_year(paper, filename)
+            metadata[filename] = paper
+        return metadata
+
+    @staticmethod
+    def _metadata_from_summary(filename: str, content: str, llm) -> PaperMetadata:
+        """Degraded fallback: wrap the old 1-line summary into a PaperMetadata."""
+        try:
+            prompt = (
+                "Summarize what this document is about in 1 sentence. "
+                "Focus on the topic, document type, and key entities "
+                "(people, organizations, dates). "
+                "Start directly with the summary — no preamble.\n\n"
+                f"Document content:\n{content}"
+            )
+            resp = llm.invoke(prompt)
+            summary = resp.content.strip()
+        except Exception:
+            summary = ""
+        return PaperMetadata(source=filename, title=filename, contributions=[summary])

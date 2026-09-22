@@ -44,6 +44,7 @@ class Nodes:
             sub_queries=sub_queries,
             source_files=state.source_files,
             doc_summaries=state.doc_summaries,
+            paper_metadata=state.paper_metadata,
             chat_history=state.chat_history,
         )
 
@@ -71,6 +72,7 @@ class Nodes:
             rewritten_queries=rewritten,
             source_files=state.source_files,
             doc_summaries=state.doc_summaries,
+            paper_metadata=state.paper_metadata,
             chat_history=state.chat_history,
         )
 
@@ -106,8 +108,45 @@ class Nodes:
             retrieved_docs=all_docs,
             source_files=state.source_files,
             doc_summaries=state.doc_summaries,
+            paper_metadata=state.paper_metadata,
             chat_history=state.chat_history,
         )
+
+    @staticmethod
+    def _format_paper_metadata(filename: str, meta) -> str:
+        """Render PaperMetadata as one compact line for agent context."""
+        # Pydantic model or plain dict — handle both.
+        if hasattr(meta, "model_dump"):
+            meta = meta.model_dump()
+
+        title = meta.get("title") or ""
+        year = meta.get("year")
+        year_str = f" ({year})" if year else ""
+        authors = ", ".join(meta.get("authors") or []) or "unknown"
+        affiliations = ", ".join(meta.get("affiliations") or []) or ""
+        venue = meta.get("venue") or ""
+        methods = ", ".join(meta.get("methods") or []) or ""
+        keywords = ", ".join(meta.get("keywords") or []) or ""
+        contributions = "; ".join(meta.get("contributions") or []) or ""
+        results = "; ".join(meta.get("key_results") or []) or ""
+
+        def cap(text: str, limit: int = 160) -> str:
+            return text if len(text) <= limit else text[: limit - 1] + "…"
+
+        parts = [f"{filename} — {title}{year_str}; authors: {authors}"]
+        if affiliations:
+            parts.append(f"affiliations: {cap(affiliations)}")
+        if venue:
+            parts.append(f"venue: {cap(venue)}")
+        if methods:
+            parts.append(f"methods: {cap(methods)}")
+        if keywords:
+            parts.append(f"keywords: {cap(keywords)}")
+        if contributions:
+            parts.append(f"about: {cap(contributions)}")
+        if results:
+            parts.append(f"key results: {cap(results)}")
+        return " | ".join(parts)
 
     def _build_tools(self) -> List[Tool]:
         """
@@ -173,17 +212,18 @@ class Nodes:
             )
         context = "\n\n".join(context_parts)
 
-        # Inject doc summaries so the agent always sees metadata (authors,
-        # titles, doc type) for every file regardless of retrieval quality.
-        summaries_parts = []
+        # Inject structured paper metadata so the agent always sees exact fields
+        # (authors, title, year, venue, methods) for every file regardless of
+        # retrieval quality.
+        metadata_parts = []
         for fname in state.source_files:
-            summary = state.doc_summaries.get(fname, "")
-            if summary:
-                summaries_parts.append(f"  {fname}: {summary}")
-        summaries_block = (
-            "\n".join(summaries_parts)
-            if summaries_parts
-            else "  (no summaries available)"
+            meta = state.paper_metadata.get(fname)
+            if meta:
+                metadata_parts.append(f"  {self._format_paper_metadata(fname, meta)}")
+        metadata_block = (
+            "\n".join(metadata_parts)
+            if metadata_parts
+            else "  (no structured metadata available)"
         )
 
         uploaded_files_str = (
@@ -193,8 +233,8 @@ class Nodes:
         )
 
         message = (
-            f"=== DOCUMENT SUMMARIES ===\n"
-            f"{summaries_block}\n\n"
+            f"=== PAPER METADATA ===\n"
+            f"{metadata_block}\n\n"
             f"=== UPLOADED FILES ===\n"
             f"The user uploaded exactly these {len(state.source_files)} file(s): "
             f"{uploaded_files_str}\n\n"
@@ -227,6 +267,7 @@ class Nodes:
             retrieved_docs=state.retrieved_docs,
             source_files=state.source_files,
             doc_summaries=state.doc_summaries,
+            paper_metadata=state.paper_metadata,
             chat_history=state.chat_history,
             answer=answer,
         )

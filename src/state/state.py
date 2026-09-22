@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from langchain_core.documents import Document
 from pydantic import BaseModel
@@ -18,6 +18,10 @@ class State(BaseModel):
     # so metadata (authors, titles, doc type) is always available regardless of
     # retrieval quality.
     doc_summaries: Dict[str, str] = {}
+    # Structured per-document metadata (PaperMetadata) — injected into agent
+    # context so exact fields (authors[], title, year, venue, methods) are
+    # always available regardless of retrieval quality.
+    paper_metadata: Dict[str, Any] = {}
     chat_history: List[Dict[str, str]] = []
     sub_queries: List[str] = []
     rewritten_queries: List[str] = []
