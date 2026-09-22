@@ -107,8 +107,8 @@ class DocumentHandler:
         """Extract structured PaperMetadata per source file.
 
         Groups loaded documents by source file, takes the first page (lowest
-        page number), and asks the LLM for structured output. Falls back to the
-        old 1-line summary if the structured call fails, so the pipeline never
+        page number), and asks the LLM for structured output. Retries once
+        before degrading to the old 1-line summary, so the pipeline never
         returns nothing.
         """
         grouped = {}
@@ -125,29 +125,36 @@ class DocumentHandler:
 
         metadata = {}
         for filename, info in grouped.items():
-            content = info["content"]
-            try:
-                if structured_llm is not None:
-                    prompt = (
-                        "Extract paper metadata from this first page of a "
-                        "document. Fill every field you can determine. "
-                        "affiliations = institutions/organizations the authors "
-                        "belong to. contributions = what the work proposes/does. "
-                        "key_results = concrete findings or validation outcomes. "
-                        "Use empty strings/lists and null year where the info is "
-                        f"absent or unclear. Do not invent facts.\n\nDocument content:\n{content}"
-                    )
-                    resp = structured_llm.invoke(prompt)
-                    paper = resp.model_dump()
-                    paper["source"] = filename
-                    paper = PaperMetadata(**paper)
-                else:
-                    paper = self._metadata_from_summary(filename, info["content"], llm)
-            except Exception:
-                paper = self._metadata_from_summary(filename, info["content"], llm)
+            paper = self._extract_metadata_for_file(
+                filename, info["content"], llm, structured_llm
+            )
             self._fill_year(paper, filename)
             metadata[filename] = paper
         return metadata
+
+    def _extract_metadata_for_file(
+        self, filename: str, content: str, llm, structured_llm
+    ) -> PaperMetadata:
+        """One structured attempt, then a retry, then degraded summary fallback."""
+        if structured_llm is not None:
+            prompt = (
+                "Extract paper metadata from this first page of a "
+                "document. Fill every field you can determine. "
+                "affiliations = institutions/organizations the authors "
+                "belong to. contributions = what the work proposes/does. "
+                "key_results = concrete findings or validation outcomes. "
+                "Use empty strings/lists and null year where the info is "
+                f"absent or unclear. Do not invent facts.\n\nDocument content:\n{content}"
+            )
+            for _ in range(2):  # one retry on failure
+                try:
+                    resp = structured_llm.invoke(prompt)
+                    data = resp.model_dump()
+                    data["source"] = filename
+                    return PaperMetadata(**data)
+                except Exception:
+                    continue
+        return self._metadata_from_summary(filename, content, llm)
 
     @staticmethod
     def _metadata_from_summary(filename: str, content: str, llm) -> PaperMetadata:
