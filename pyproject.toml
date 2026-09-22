@@ -23,3 +23,20 @@ dependencies = [
     "langchain-tavily>=0.2.18",
     "pymupdf>=1.27.2.3",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.0",
+    "ruff>=0.14.0",
+]
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+# Real-bug classes (undefined names, unused imports/vars, syntax errors)
+# plus core pycodestyle errors. Keeps CI green and signal-first.
+select = ["E4", "E7", "E9", "F"]
+
+[tool.ruff.lint.per-file-ignores]
+"old_version/**" = ["ALL"]

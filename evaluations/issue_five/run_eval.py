@@ -7,7 +7,6 @@ Usage: .venv/bin/python3 evaluations/issue_five/run_eval.py
 
 import json
 import sys
-from collections import Counter
 from pathlib import Path
 from typing import List
 

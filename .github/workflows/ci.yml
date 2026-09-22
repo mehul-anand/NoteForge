@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: astral-sh/setup-uv@v5
+      - name: Install deps
+        run: uv sync --frozen
+      - name: Lint
+        run: |
+          uv tool run ruff check src/ evaluations/
+          uv tool run ruff check --select F src/
+      - name: Syntax check
+        run: uv run python -m compileall -q src/ streamlit_app.py
+      - name: Unit tests
+        run: uv run python -m pytest test/ -q
