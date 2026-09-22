@@ -220,8 +220,8 @@ __marimo__/
 # Old archived versions
 old_version/
 
-# Test folder
-test/
+# Test folder (transcripts stay private; pytest files are committed)
+test/*.md
 
 # Notes Folder
 notes/
