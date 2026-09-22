@@ -196,15 +196,15 @@ def build_current_pipeline(chunks, filenames, all_docs, llm):
     vs.create_retriever(chunks)
     retriever = vs.get_retriever()
 
-    # doc summaries
+    # structured paper metadata
     handler = DocumentHandler()
-    doc_summaries = handler.extract_summaries(all_docs, llm)
+    paper_metadata = handler.extract_metadata(all_docs, llm)
 
     # full graph
     builder = GraphBuilder(retriever, llm)
     builder.build()
 
-    return builder, doc_summaries
+    return builder, paper_metadata
 
 
 # ---------------------------------------------------------------------------
@@ -230,8 +230,8 @@ def run_evaluation():
     print("\nBuilding baseline pipeline (pre-Claude: similarity k=8, no agent) …")
     baseline_graph = build_baseline_pipeline(chunks, llm)
 
-    print("Building current pipeline (MMR k=15, agent, summaries, decomposition) …")
-    current_graph, doc_summaries = build_current_pipeline(
+    print("Building current pipeline (MMR k=15, agent, metadata, decomposition) …")
+    current_graph, paper_metadata = build_current_pipeline(
         chunks, filenames, all_docs, llm
     )
 
@@ -271,7 +271,7 @@ def run_evaluation():
         c_result = current_graph.run(
             query,
             source_files=filenames,
-            doc_summaries=doc_summaries,
+            paper_metadata=paper_metadata,
             chat_history=[],
         )
         c_answer = c_result.get("answer", "")
@@ -324,7 +324,7 @@ def run_evaluation():
         baseline_results,
     )
     print_results(
-        "CURRENT (MMR k=15, agent, summaries, decomposition, rewriting)",
+        "CURRENT (MMR k=15, agent, metadata, decomposition, rewriting)",
         current_agg,
         current_results,
     )

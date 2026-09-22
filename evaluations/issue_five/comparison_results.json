@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-07-08T03:37:32.276625",
+  "timestamp": "2026-09-22T11:10:58.767810",
   "config": {
     "comparison_k": 8,
     "baseline": {
@@ -18,7 +18,7 @@
       "avg_precision": 0.812,
       "avg_recall": 0.771,
       "avg_mrr": 0.917,
-      "avg_factual": 0.542
+      "avg_factual": 0.5
     },
     "results": [
       {
@@ -42,7 +42,7 @@
         },
         "generation": {
           "factual_accuracy": 1.0,
-          "answer": "The CRAG paper was written by Shi-Qi Yan, Jia-Chen Gu, Yun Zhu, and Zhen-Hua Ling."
+          "answer": "The CRAG paper was authored by Shi-Qi Yan, Jia-Chen Gu, Yun Zhu, and Zhen-Hua Ling."
         }
       },
       {
@@ -65,8 +65,8 @@
           "mrr": 1.0
         },
         "generation": {
-          "factual_accuracy": 0.5,
-          "answer": "The CBF UGV paper was written by authors from the Robert Bosch Center for Cyber Physical Systems (RBCCPS) at the Indian Institute of Science (IISc), Bengaluru. The specific authors mentioned are V. Katewa and Shishir K."
+          "factual_accuracy": 0.0,
+          "answer": "The CBF UGV paper was written by authors from the Robert Bosch Center for Cyber Physical Systems (RBCCPS) at the Indian Institute of Science (IISc), Bengaluru, specifically by individuals identified as {vkatewa, shishirk}@iisc.ac.in."
         }
       },
       {
@@ -102,7 +102,7 @@
         },
         "generation": {
           "factual_accuracy": 1.0,
-          "answer": "The CBF UAV paper was published in 2024."
+          "answer": "The year of publication for the CBF UAV paper is 2024."
         }
       },
       {
@@ -126,7 +126,7 @@
         },
         "generation": {
           "factual_accuracy": 0.0,
-          "answer": "The context does not provide specific information regarding the institutes involved in the papers mentioned. Therefore, I cannot answer the question."
+          "answer": "The context provided does not contain specific information about the institutes involved in the papers. Therefore, I cannot answer the question."
         }
       },
       {
@@ -138,7 +138,7 @@
         },
         "generation": {
           "factual_accuracy": 0.0,
-          "answer": "The context provided does not contain enough information to answer the question regarding the number of papers uploaded."
+          "answer": "The provided context does not contain any information regarding the number of papers you uploaded. Therefore, I cannot answer the question."
         }
       },
       {
@@ -150,7 +150,7 @@
         },
         "generation": {
           "factual_accuracy": 0.0,
-          "answer": "The context provided does not include any information about a UGV paper. Therefore, I cannot provide an answer regarding the content of a UGV paper."
+          "answer": "The provided context does not contain any information about a UGV paper. Therefore, I cannot provide an answer regarding its content."
         }
       },
       {
@@ -162,7 +162,7 @@
         },
         "generation": {
           "factual_accuracy": 0.0,
-          "answer": "Here are the authors and titles of the papers mentioned in the context:\n\n1. **Title:** Llama 2: Open foundation and fine-tuned chat models  \n   **Authors:** Albert, Amjad Almahairi, Yasmine Babaei, Nikolay Bashlykov, Soumya Batra, Prajjwal Bhargava, Shruti Bhosale, Dan Bikel, Lukas Blecher, et al. 2023b.\n\n2. **Title:** RAT: retrieval augmented thoughts elicit context-aware reasoning in long-horizon generation  \n   **Authors:** Zihao Wang, Anji Liu, Haowei Lin, Jiaqi Li, Xiaojian Ma, and Yitao Liang. 2024.\n\n3. **Title:** Making retrieval-augmented language models robust to irrelevant context  \n   **Authors:** Ori Yoran, Tomer Wolfson, Ori Ram, and Jonathan Berant. 2024.\n\n4. **Title:** Factscore: Fine-grained atomic evaluation of factual precision in long form text generation  \n   **Authors:** Sewon Min, Kalpesh Krishna, Xinxi Lyu, Mike Lewis, Wen-tau Yih, Pang Wei Koh, Mohit Iyyer, Luke Zettlemoyer, and Hannaneh Hajishirzi. 2023.\n\n5. **Title:** Generating benchmarks for factuality evaluation of language models  \n   **Authors:** Dor Muhlgay, Ori Ram, Inbal Magar, Yoav Levine, Nir Ratner, Yonatan Belinkov, Omri Abend, Kevin Leyton-Brown, Amnon Shashua, and Yoav Shoham. 2023.\n\n6. **Title:** Efficient large-scale language model training on GPU clusters using megatron-lm  \n   **Authors:** Deepak Narayanan, Mohammad Shoeybi, Jared Casper, Patrick LeGresley, Mostofa Patwary, Vijay Korthikanti, Dmitri Vainbrand, Prethvi Kashinkunti, Julie Bernauer, Bryan Catanzaro, Amar Phanishayee, and Matei Zaharia. 2021.\n\n7. **Title:** GPT-4 technical report  \n   **Authors:** OpenAI. 2023.\n\n8. **Title:** Training language models to follow instructions with human feedback  \n   **Authors:** Long Ouyang, Jeffrey Wu, Xu Jiang, Diogo Almeida, Carroll L. Wainwright, Pamela Mishkin, Chong Zhang, Sandhini Agarwal, Katarina Slama, Alex Ray, John Schulman, Jacob Hilton, Fraser Kelton, Luke Miller, Maddie Simens, Amanda Askell, Peter Welinder, Paul F. Christiano, Jan Leike, and Ryan Lowe. 2022.\n\n9. **Title:** The web is your oyster - knowledge-intensive NLP against a very large web corpus  \n   **Authors:** Aleksandra Piktus, Fabio Petroni, Vladimir Karpukhin, Dmytro Okhonko, Samuel Broscheit, Gautier Izacard, Patrick S. H. Lewis, Barlas Oguz, Edouard Grave, Wen-tau Yih, and Sebastian Riedel. 2021.\n\n10. **Title:** Is chatgpt a general-purpose natural language processing task solver?  \n    **Authors:** Chengwei Qin, Aston Zhang, Zhuosheng Zhang, Jiaao Chen, Michihiro Yasunaga, and Diyi Yang. 2023.\n\n11. **Title:** Search augmented instruction learning  \n    **Authors:** Hongyin Luo, Tianhua Zhang, Yung-Sung Chuang, Yuan Gong, Yoon Kim, Xixin Wu, Helen Meng, and James R. Glass. 2023.\n\n12. **Title:** When not to trust language models: Investigating effectiveness of parametric and non-parametric memories  \n    **Authors:** Alex Mallen, Akari Asai, Victor Zhong, Rajarshi Das, Daniel Khashabi, and Hannaneh Hajishirzi. 2023.\n\n13. **Title:** A survey on knowledge-oriented retrieval-augmented generation  \n    **Authors:** Mingyue Cheng, Yucong Luo, Jie Ouyang, Qi Liu, Huijie Liu, Li Li, Shuo Yu, Bohou Zhang, Jiawei Cao, Jie Ma, et al. 2025.\n\n14. **Title:** Enhancing Large Language Models with Domain-specific Retrieval Augment Generation: A Case Study on Long-form Consumer Health Question Answering in Ophthalmology  \n    **Authors:** Aidan Gilson, Xuguang Ai, Thilaka Arunachalam, Ziyou Chen, Ki Xiong Cheong, Amisha Dave, Cameron Duic, Mercy Kibe, Annette Kaminaka, Minali Prasad, et al. 2024.\n\n15. **Title:** Towards More Robust Retrieval-Augmented Generation: Evaluating RAG Under Adversarial Poisoning Attacks  \n    **Authors:** Jinyan Su, Jin Peng Zhou, Zhengxin Zhang, Preslav Nakov, and Claire Cardie. 2024."
+          "answer": "Here are the authors and titles of the papers mentioned in the context:\n\n1. **Authors:** Albert, Amjad Almahairi, Yasmine Babaei, Nikolay Bashlykov, Soumya Batra, Prajjwal Bhargava, Shruti Bhosale, Dan Bikel, Lukas Blecher, et al.\n   **Title:** Llama 2: Open foundation and fine-tuned chat models.\n\n2. **Authors:** Zihao Wang, Anji Liu, Haowei Lin, Jiaqi Li, Xiaojian Ma, and Yitao Liang.\n   **Title:** RAT: retrieval augmented thoughts elicit context-aware reasoning in long-horizon generation.\n\n3. **Authors:** Ori Yoran, Tomer Wolfson, Ori Ram, and Jonathan Berant.\n   **Title:** Making retrieval-augmented language models robust to irrelevant context.\n\n4. **Authors:** Sewon Min, Kalpesh Krishna, Xinxi Lyu, Mike Lewis, Wen-tau Yih, Pang Wei Koh, Mohit Iyyer, Luke Zettlemoyer, and Hannaneh Hajishirzi.\n   **Title:** Factscore: Fine-grained atomic evaluation of factual precision in long form text generation.\n\n5. **Authors:** Dor Muhlgay, Ori Ram, Inbal Magar, Yoav Levine, Nir Ratner, Yonatan Belinkov, Omri Abend, Kevin Leyton-Brown, Amnon Shashua, and Yoav Shoham.\n   **Title:** Generating benchmarks for factuality evaluation of language models.\n\n6. **Authors:** Deepak Narayanan, Mohammad Shoeybi, Jared Casper, Patrick LeGresley, Mostofa Patwary, Vijay Korthikanti, Dmitri Vainbrand, Prethvi Kashinkunti, Julie Bernauer, Bryan Catanzaro, Amar Phanishayee, and Matei Zaharia.\n   **Title:** Efficient large-scale language model training on GPU clusters using megatron-lm.\n\n7. **Authors:** OpenAI.\n   **Title:** GPT-4 technical report.\n\n8. **Authors:** Long Ouyang, Jeffrey Wu, Xu Jiang, Diogo Almeida, Carroll L. Wainwright, Pamela Mishkin, Chong Zhang, Sandhini Agarwal, Katarina Slama, Alex Ray, John Schulman, Jacob Hilton, Fraser Kelton, Luke Miller, Maddie Simens, Amanda Askell, Peter Welinder, Paul F. Christiano, Jan Leike, and Ryan Lowe.\n   **Title:** Training language models to follow instructions with human feedback.\n\n9. **Authors:** Aleksandra Piktus, Fabio Petroni, Vladimir Karpukhin, Dmytro Okhonko, Samuel Broscheit, Gautier Izacard, Patrick S. H. Lewis, Barlas Oguz, Edouard Grave, Wen-tau Yih, and Sebastian Riedel.\n   **Title:** The web is your oyster - knowledge-intensive NLP against a very large web corpus.\n\n10. **Authors:** Chengwei Qin, Aston Zhang, Zhuosheng Zhang, Jiaao Chen, Michihiro Yasunaga, and Diyi Yang.\n    **Title:** Is chatgpt a general-purpose natural language processing task solver?\n\n11. **Authors:** Hongyin Luo, Tianhua Zhang, Yung-Sung Chuang, Yuan Gong, Yoon Kim, Xixin Wu, Helen Meng, and James R. Glass.\n    **Title:** Search augmented instruction learning.\n\n12. **Authors:** Alex Mallen, Akari Asai, Victor Zhong, Rajarshi Das, Daniel Khashabi, and Hannaneh Hajishirzi.\n    **Title:** When not to trust language models: Investigating effectiveness of parametric and non-parametric memories.\n\n13. **Authors:** An Yang, Anfeng Li, Baosong Yang, Beichen Zhang, Binyuan Hui, Bo Zheng, Bowen Yu, Chang Gao, Chengen Huang, Chenxu Lv, et al.\n    **Title:** Qwen3 technical report.\n\n14. **Authors:** Chen Yang, Baowen Xu, Ferdian Thung, Yuxin Shi, and Tiancheng Zhang.\n    **Title:** Answer summarization for technical queries: Benchmark and new approach.\n\n15. **Authors:** Tianyi Zhang, Ting Zhang, Yanjun Di, Minghui Chen, and Tao Zhang.\n    **Title:** SOSum: A Dataset of Stack Overflow Post Summaries.\n\n16. **Authors:** Ziyu Gao, Xin Xia, David Lo, John Grundy, and Tian Zhang.\n    **Title:** I Know What You Are Searching For: Code Snippet Recommendation from Stack Overflow Posts.\n\n17. **Authors:** Aidan Gilson, Xuguang Ai, Thilaka Arunachalam, Ziyou Chen, Ki Xiong Cheong, Amisha Dave, Cameron Duic, Mercy Kibe, Annette Kaminaka, Minali Prasad, et al.\n    **Title:** Enhancing Large Language Models with Domain-specific Retrieval Augment Generation: A Case Study on Long-form Consumer Health Question Answering in Ophthalmology."
         }
       }
     ]
@@ -172,7 +172,7 @@
       "avg_precision": 0.688,
       "avg_recall": 0.875,
       "avg_mrr": 0.958,
-      "avg_factual": 0.917
+      "avg_factual": 0.958
     },
     "results": [
       {
@@ -184,7 +184,7 @@
         },
         "generation": {
           "factual_accuracy": 1.0,
-          "answer": "The HyDE paper titled \"Never Come Up Empty: Adaptive HyDE Retrieval for Improving LLM Developer Support\" was authored by Fangjian Lei, Mariam El Mezouar, Shayan Noei, and Ying Zou from Queen's University and the Royal Military College of Canada."
+          "answer": "The paper titled \"Never Come Up Empty: Adaptive HyDE Retrieval for Improving LLM Developer Support\" was authored by Fangjian Lei, Mariam El Mezouar, Shayan Noei, and Ying Zou."
         }
       },
       {
@@ -196,7 +196,7 @@
         },
         "generation": {
           "factual_accuracy": 1.0,
-          "answer": "The CRAG paper, titled \"Corrective Retrieval Augmented Generation,\" was co-authored by Shi-Qi Yan, Jia-Chen Gu, Yun Zhu, and Zhen-Hua Ling."
+          "answer": "The CRAG paper, titled \"Corrective Retrieval Augmented Generation,\" was authored by Shi-Qi Yan, Jia-Chen Gu, Yun Zhu, and Zhen-Hua Ling."
         }
       },
       {
@@ -219,8 +219,8 @@
           "mrr": 1.0
         },
         "generation": {
-          "factual_accuracy": 0.5,
-          "answer": "The CBF UGV paper, titled \"Control Barrier Functions for Unmanned Ground Vehicles,\" was written by Phani Thontepu and other co-authors."
+          "factual_accuracy": 1.0,
+          "answer": "The CBF UGV paper, titled \"Collision Cone Control Barrier Functions for Kinematic Obstacle Avoidance in UGVs,\" was authored by Phani Thontepu, Bhavya Giri Goswami, Manan Tayal, Neelaksh Singh, Shyam Sundar P I, Shyam Sundar M G, Suresh Sundaram, and Vaibhav Katewa."
         }
       },
       {
@@ -244,7 +244,7 @@
         },
         "generation": {
           "factual_accuracy": 1.0,
-          "answer": "The title of the CRAG paper is \"Corrective Retrieval Augmented Generation (CRAG).\""
+          "answer": "The title of the CRAG paper is \"Corrective Retrieval Augmented Generation.\""
         }
       },
       {
@@ -256,7 +256,7 @@
         },
         "generation": {
           "factual_accuracy": 1.0,
-          "answer": "The CBF UAV paper was published in 2024."
+          "answer": "The CBF UAV paper, titled \"Control Barrier Functions in Dynamic UAVs for Kinematic Obstacle Avoidance: A Collision Cone Approach,\" was published in 2024."
         }
       },
       {
@@ -268,7 +268,7 @@
         },
         "generation": {
           "factual_accuracy": 1.0,
-          "answer": "The CBF UGV paper was published in 2023."
+          "answer": "The CBF UGV paper, titled \"Collision Cone Control Barrier Functions for Kinematic Obstacle Avoidance in UGVs,\" was published in 2023."
         }
       },
       {
@@ -280,7 +280,7 @@
         },
         "generation": {
           "factual_accuracy": 0.5,
-          "answer": "The institutes involved in the papers are as follows:\n\n1. **CBF_UAV_2024.pdf**: The authors are affiliated with institutions but specific names are not provided in the document.\n2. **CBF_UGV_2023.pdf**: The research was supported by the Wipro IISc Research Innovation Network (WIRIN) and the authors are from the Indian Institute of Science (IISc), Bengaluru.\n3. **CRAG_2024.pdf**: The document does not specify any particular institutes for the authors.\n4. **HyDE_2025.pdf**: The authors are from Queen's University and the Royal Military College of Canada.\n\nIn summary, the specific institutes mentioned are:\n- Indian Institute of Science (IISc) for the CBF_UGV_2023 paper.\n- Queen's University and the Royal Military College of Canada for the HyDE_2025 paper."
+          "answer": "The papers involve the following institutes:\n\n1. **CBF_UAV_2024.pdf** and **CBF_UGV_2023.pdf**:\n   - **Indian Institute of Science (IISc), Bengaluru**\n     - Affiliations include the Cyber-Physical Systems and the Department of Mechanical Engineering.\n\n2. **CRAG_2024.pdf**:\n   - **University of Science and Technology of China, Hefei, China**\n   - **Department of Computer Science, University of California, Los Angeles (UCLA)**\n   - **Google DeepMind**\n\n3. **HyDE_2025.pdf**:\n   - **Queen\u2019s University**\n   - **Royal Military College of Canada**"
         }
       },
       {
@@ -304,7 +304,7 @@
         },
         "generation": {
           "factual_accuracy": 1.0,
-          "answer": "The UGV paper titled \"Control Barrier Functions for Unmanned Ground Vehicles\" by Phani Thontepu et al. introduces a novel class of Control Barrier Functions (CBFs) aimed at enhancing collision avoidance with dynamic kinematic obstacles in unmanned ground vehicles (UGVs). The authors propose new methodologies for this purpose, and their approach has been verified through simulations conducted on TurtleBot3 and F1Tenth platforms. The focus of the paper is on the efficient and safe navigation of UGVs in dynamic environments, addressing challenges in real-time safety-critical control using CBFs."
+          "answer": "The UGV paper, titled \"Collision Cone Control Barrier Functions for Kinematic Obstacle Avoidance in UGVs,\" proposes a new class of Control Barrier Functions (CBFs) aimed at helping Unmanned Ground Vehicles (UGVs) avoid collisions with kinematic (moving) obstacles. While existing CBFs have been effective for static obstacles, their application in dynamic environments has been limited. \n\nThe authors introduce a novel CBF formulation that ensures the relative velocity of the vehicle is directed away from potential collisions with obstacles, effectively utilizing the collision cone approach. This approach provides theoretical guarantees for safety regarding both unicycle and bicycle models of UGVs.\n\nThe efficacy of this new control methodology was verified through simulations conducted on PyBullet, using platforms like TurtleBot3 and F1Tenth. The results demonstrated that the new CBF formulation significantly enhances the ability of UGVs to navigate safely in dynamic environments."
         }
       },
       {
@@ -316,7 +316,7 @@
         },
         "generation": {
           "factual_accuracy": 1.0,
-          "answer": "Here are the authors and titles of all the uploaded papers:\n\n1. **CBF_UAV_2024.pdf**\n   - **Authors:** Manan Tayal, Rajpal Singh, Jishnu Keshavan, Shishir Kolathaya\n   - **Title:** Control Barrier Functions in Dynamic UAVs for Kinematic Obstacle Avoidance: A Collision Cone Approach\n\n2. **CBF_UGV_2023.pdf**\n   - **Authors:** Phani Thontepu, Bhavya Giri Goswami, Manan Tayal, Neelaksh Singh, Shyam Sundar P I, Shyam Sundar M G, Suresh Sundaram, Vaibhav Katewa, Shishir Kolathaya\n   - **Title:** Collision Cone Control Barrier Functions for Kinematic Obstacle Avoidance in UGVs\n\n3. **CRAG_2024.pdf**\n   - **Authors:** Shi-Qi Yan, Jia-Chen Gu, Yun Zhu, Zhen-Hua Ling\n   - **Title:** Corrective Retrieval Augmented Generation (CRAG)\n\n4. **HyDE_2025.pdf**\n   - **Authors:** Fangjian Lei, Mariam El Mezouar, Shayan Noei, Ying Zou\n   - **Title:** Never Come Up Empty: Adaptive HyDE Retrieval for Improving LLM Developer Support"
+          "answer": "Here are the authors and titles of the papers:\n\n1. **Title:** Control Barrier Functions in Dynamic UAVs for Kinematic Obstacle Avoidance: A Collision Cone Approach  \n   **Authors:** Manan Tayal, Rajpal Singh, Jishnu Keshavan, Shishir Kolathaya\n\n2. **Title:** Collision Cone Control Barrier Functions for Kinematic Obstacle Avoidance in UGVs  \n   **Authors:** Phani Thontepu, Bhavya Giri Goswami, Manan Tayal, Neelaksh Singh, Shyam Sundar P I, Shyam Sundar M G, Suresh Sundaram, Vaibhav Katewa, Shishir Kolathaya\n\n3. **Title:** Corrective Retrieval Augmented Generation  \n   **Authors:** Shi-Qi Yan, Jia-Chen Gu, Yun Zhu, Zhen-Hua Ling\n\n4. **Title:** Never Come Up Empty: Adaptive HyDE Retrieval for Improving LLM Developer Support  \n   **Authors:** Fangjian Lei, Mariam El Mezouar, Shayan Noei, Ying Zou"
         }
       }
     ]
