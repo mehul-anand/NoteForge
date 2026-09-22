@@ -60,3 +60,4 @@
 - [next] Richer metric formulas — chunk-level precision/recall instead of document-level
   (needs per-query chunk labels in ground truth)
 - [next] Doc summary prompt improvement — current 1-sentence summary truncates 9+ author lists
+- [next] Conditional safety net — only run retrieve_docs safety net (lines 95-102) when there are multiple sub-queries; skip for simple queries to avoid pulling irrelevant chunks
