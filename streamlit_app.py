@@ -1,6 +1,7 @@
 import json
 import os
 import tempfile
+import uuid
 from collections import Counter
 from pathlib import Path
 
@@ -9,6 +10,7 @@ import streamlit.components.v1 as components
 from dotenv import load_dotenv
 
 from src.config.config import Config, moderation
+from src.config.usage import get_usage_gate
 from src.document_ingestion.document_processor import DocumentHandler
 from src.document_ingestion.document_processor import normalize_source_key
 from src.graph_builder.graph import GraphBuilder
@@ -16,21 +18,62 @@ from src.vector_store.store import VectorStore
 
 load_dotenv()
 
+
+def _secrets_get(key):
+    """Read a Streamlit secret; None when not deployed (no secrets.toml).
+
+    st.secrets raises if no secrets.toml exists (local dev) — treat that
+    as "no value" rather than a failure.
+    """
+    try:
+        return st.secrets.get(key)
+    except Exception:
+        return None
+
+
+DEPLOYED = bool(_secrets_get("DEPLOYED"))
+
+
+def _bridge_secret(secret_key, env_var):
+    """Lift a server-side secret into the environment (deployed mode only)."""
+    value = _secrets_get(secret_key)
+    if value:
+        os.environ[env_var] = value
+        return True
+    return False
+
+
 # Allow deployed instances to override the default agent system prompt from
 # Streamlit secrets without touching the repo (see prompts/agent_v1.md).
-# st.secrets raises if no secrets.toml exists (local dev) — treat that as no override.
-try:
-    prompt_override = st.secrets["AGENT_SYSTEM_PROMPT"]
-except Exception:
-    prompt_override = ""
+prompt_override = _secrets_get("AGENT_SYSTEM_PROMPT")
 if prompt_override:
     os.environ["AGENT_SYSTEM_PROMPT"] = prompt_override
+
+# API keys live server-side; .env / sidebar inputs still apply locally.
+_bridge_secret("OPENAI_API_KEY", "OPENAI_API_KEY")
+_bridge_secret("TAVILY_API_KEY", "TAVILY_API_KEY")
 
 st.set_page_config(page_title="NoteForge RAG")
 st.title("NoteForge — RAG Q&A")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
+if "nf_session_id" not in st.session_state:
+    st.session_state.nf_session_id = uuid.uuid4().hex
+
+RATE_LIMIT_MSG = (
+    "You've hit the demo's temporary usage limit — please wait a minute "
+    "and try again."
+)
+ERROR_MSG = "Sorry, something went wrong while generating that answer. Please try again."
+
+# Process-wide budget keeper (module import is cached per process, so this
+# singleton — and the global caps inside it — survive Streamlit reruns).
+g_usage = get_usage_gate()
+
+# Memoized demo ingest: the data/ corpus is embedded once per process and
+# reused across sessions so page reloads don't re-burn embedding tokens.
+_INGEST_CACHE: dict = {}
 
 
 def render_copy_button(text: str) -> None:
@@ -81,6 +124,14 @@ def clear_session_state():
         st.session_state.messages = []
 
 
+def _demo_cache_key(pdfs, url):
+    """Cache key for the auto-ingest demo path (data/ only, no URL)."""
+    if not pdfs or url:
+        return None
+    files = tuple(sorted(p.name for p in pdfs))
+    return (files, Config.CHUNK_SIZE, Config.CHUNK_OVERLAP, Config.RETRIEVER_K)
+
+
 def ingest_documents(uploaded_files=None, url=None):
     handler = DocumentHandler()
 
@@ -98,71 +149,114 @@ def ingest_documents(uploaded_files=None, url=None):
             return
         source_from_upload = False
 
-    all_docs = []
-    temp_paths = []
-
-    with st.status("Loading documents…", expanded=True) as status:
-        for pdf in pdfs:
-            if source_from_upload:
-                suffix = Path(pdf.name).suffix
-                with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-                    tmp.write(pdf.getvalue())
-                    temp_path = tmp.name
-                temp_paths.append(temp_path)
-                file_label = pdf.name
-            else:
-                temp_path = str(pdf)
-                file_label = pdf.name
-
-            status.write(f"Loading {file_label} …")
-            suffix = Path(file_label).suffix
-            loaded = (
-                handler.pdf_loader(temp_path)
-                if suffix == ".pdf"
-                else handler.text_loader(temp_path)
+    # Demo/data path only: serve from the per-process cache when present so
+    # reloads and repeat visits don't re-embed the corpus.
+    cache_key = None if (source_from_upload or url) else _demo_cache_key(pdfs, url)
+    if cache_key is not None and cache_key in _INGEST_CACHE:
+        (
+            st.session_state.retriever,
+            st.session_state.source_files,
+            st.session_state.paper_metadata,
+            st.session_state.chunk_counts,
+            st.session_state.graph,
+        ) = _INGEST_CACHE[cache_key]
+        with st.status("Documents ready", expanded=False) as status:
+            status.update(
+                label="Ready — loaded from in-process cache (no re-embedding)",
+                state="complete",
             )
-            all_docs.extend(loaded)
+        return
 
-        if url:
-            status.write(f"Loading {url} …")
-            web_docs = handler.url_loader(url)
-            for doc in web_docs:
-                doc.metadata["source"] = url
-            all_docs.extend(web_docs)
+    if not g_usage.try_ingest():
+        st.warning(
+            "Demo usage limit for document processing reached — "
+            "please try again later."
+        )
+        return
 
-        if source_from_upload:
-            status.write("Cleaning up temporary files …")
-            for path in temp_paths:
-                os.unlink(path)
+    try:
+        all_docs = []
+        temp_paths = []
 
-        status.write("Splitting into chunks …")
-        chunks = handler.doc_splitter(all_docs)
+        with st.status("Loading documents…", expanded=True) as status:
+            for pdf in pdfs:
+                if source_from_upload:
+                    suffix = Path(pdf.name).suffix
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+                        tmp.write(pdf.getvalue())
+                        temp_path = tmp.name
+                    temp_paths.append(temp_path)
+                    file_label = pdf.name
+                else:
+                    temp_path = str(pdf)
+                    file_label = pdf.name
 
-        source_counts = Counter(doc.metadata.get("source", "unknown") for doc in chunks)
+                status.write(f"Loading {file_label} …")
+                suffix = Path(file_label).suffix
+                loaded = (
+                    handler.pdf_loader(temp_path)
+                    if suffix == ".pdf"
+                    else handler.text_loader(temp_path)
+                )
+                all_docs.extend(loaded)
 
-        status.write(f"Embedding {len(chunks)} chunks …")
-        vs = VectorStore()
-        vs.create_retriever(chunks)
-        st.session_state.retriever = vs.get_retriever()
+            if url:
+                status.write(f"Loading {url} …")
+                web_docs = handler.url_loader(url)
+                for doc in web_docs:
+                    doc.metadata["source"] = url
+                all_docs.extend(web_docs)
 
-        filenames = [Path(pdf.name).name for pdf in pdfs]
-        if url:
-            filenames.append(normalize_source_key(url))
-        st.session_state.source_files = filenames
+            if source_from_upload:
+                status.write("Cleaning up temporary files …")
+                for path in temp_paths:
+                    os.unlink(path)
 
-        status.write("Extracting structured paper metadata …")
-        llm = Config.get_llm()
-        st.session_state.paper_metadata = handler.extract_metadata(all_docs, llm)
+            status.write("Splitting into chunks …")
+            chunks = handler.doc_splitter(all_docs)
 
-        status.write("Building graph …")
-        builder = GraphBuilder(st.session_state.retriever, llm)
-        builder.build()
-        st.session_state.graph = builder
-        st.session_state.chunk_counts = source_counts
+            source_counts = Counter(
+                doc.metadata.get("source", "unknown") for doc in chunks
+            )
 
-        status.update(
-            label=f"Ready — {len(filenames)} sources, {len(chunks)} chunks",
-            state="complete",
+            status.write(f"Embedding {len(chunks)} chunks …")
+            vs = VectorStore()
+            vs.create_retriever(chunks)
+            retriever = vs.get_retriever()
+
+            filenames = [Path(pdf.name).name for pdf in pdfs]
+            if url:
+                filenames.append(normalize_source_key(url))
+
+            status.write("Extracting structured paper metadata …")
+            llm = Config.get_llm()
+            paper_metadata = handler.extract_metadata(all_docs, llm)
+
+            status.write("Building graph …")
+            builder = GraphBuilder(retriever, llm)
+            builder.build()
+
+            status.update(
+                label=f"Ready — {len(filenames)} sources, {len(chunks)} chunks",
+                state="complete",
+            )
+    except Exception:
+        st.error(ERROR_MSG)
+        return
+
+    st.session_state.retriever = retriever
+    st.session_state.source_files = filenames
+    st.session_state.paper_metadata = paper_metadata
+    st.session_state.chunk_counts = source_counts
+    st.session_state.graph = builder
+
+    if cache_key is not None:
+        _INGEST_CACHE[cache_key] = (
+            retriever,
+            filenames,
+            paper_metadata,
+            source_counts,
+            builder,
         )
 
 
@@ -175,22 +269,30 @@ def render_message(role, content):
 
 
 with st.sidebar:
-    st.header("API Keys")
-    api_key = st.text_input(
-        "OpenAI API Key",
-        type="password",
-        value=os.getenv("OPENAI_API_KEY", ""),
-    )
-    if api_key:
-        os.environ["OPENAI_API_KEY"] = api_key
+    if DEPLOYED:
+        st.caption(
+            "Demo instance — API keys are configured server-side and never "
+            "shown here."
+        )
+        api_key = os.getenv("OPENAI_API_KEY", "")
+        tavily_api_key = os.getenv("TAVILY_API_KEY", "")
+    else:
+        st.header("API Keys")
+        api_key = st.text_input(
+            "OpenAI API Key",
+            type="password",
+            value=os.getenv("OPENAI_API_KEY", ""),
+        )
+        if api_key:
+            os.environ["OPENAI_API_KEY"] = api_key
 
-    tavily_api_key = st.text_input(
-        "Tavily API Key",
-        type="password",
-        value=os.getenv("TAVILY_API_KEY", ""),
-    )
-    if tavily_api_key:
-        os.environ["TAVILY_API_KEY"] = tavily_api_key
+        tavily_api_key = st.text_input(
+            "Tavily API Key",
+            type="password",
+            value=os.getenv("TAVILY_API_KEY", ""),
+        )
+        if tavily_api_key:
+            os.environ["TAVILY_API_KEY"] = tavily_api_key
 
     st.divider()
 
@@ -236,9 +338,16 @@ if prompt := st.chat_input("Ask about your documents …"):
 
     if "graph" not in st.session_state or st.session_state.graph is None:
         answer = (
-            "No documents loaded. Upload PDFs or add a URL using the sidebar "
-            "and enter API keys."
+            "No documents loaded. Upload PDFs or add a URL using the sidebar."
         )
+    elif not g_usage.try_llm(st.session_state.nf_session_id):
+        answer = RATE_LIMIT_MSG
+        with st.chat_message("assistant"):
+            st.markdown(answer)
+    elif not g_usage.try_moderation():
+        answer = RATE_LIMIT_MSG
+        with st.chat_message("assistant"):
+            st.markdown(answer)
     elif not moderation(prompt):
         answer = "I'm sorry, I can't help with that request."
         with st.chat_message("assistant"):
@@ -246,13 +355,16 @@ if prompt := st.chat_input("Ask about your documents …"):
     else:
         with st.chat_message("assistant"):
             with st.spinner("Thinking …"):
-                result = st.session_state.graph.run(
-                    prompt,
-                    source_files=st.session_state.get("source_files", []),
-                    paper_metadata=st.session_state.get("paper_metadata", {}),
-                    chat_history=st.session_state.messages[:-1],
-                )
-                answer = result.get("answer", "No answer generated.")
+                try:
+                    result = st.session_state.graph.run(
+                        prompt,
+                        source_files=st.session_state.get("source_files", []),
+                        paper_metadata=st.session_state.get("paper_metadata", {}),
+                        chat_history=st.session_state.messages[:-1],
+                    )
+                    answer = result.get("answer", "No answer generated.")
+                except Exception:
+                    answer = ERROR_MSG
             st.markdown(answer)
             render_copy_button(answer)
 
