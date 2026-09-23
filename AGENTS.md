@@ -10,6 +10,26 @@ Upload PDFs (or URLs) → chunks + FAISS/MMR index + per-document structured
 metadata → question → `expand_query → rewrite_queries → retrieve → agent(ReAct + Tavily)`.
 Product direction: Literature Review Copilot (see `notes/new_direction.md`).
 
+## TODO (next)
+
+- **Profile identity verification (`_verify_profile`)**: every Scholar/LinkedIn
+  URL presented for a deterministically-resolved author must be gated — fetch
+  the profile page, normalize its displayed principal name, and require equality
+  with the resolved author (from PAPER METADATA). Mismatch → suppress that link,
+  say "could not be verified; I don't link profiles that don't clearly identify
+  the exact person" (rule 11: never substitute, incl. a co-author of the same
+  paper — the LITM→Michele Bevilacqua Scholar substitution case). Name-equality
+  only by default. ~2 Tavily calls/authors (verify fallback), plus the linked
+  URL binding for these profiles must use the full URL as the source key.
+- **B — per-intent fan-out + merge** (see `notes/new_direction.md` "Known
+  future: B"): after `expand_query`, route each sub-question to its best node
+  (agent / synthesize) and merge answers+artifacts. Option A (mixed question →
+  agent) shipped as a stopgap; B is the split/merge graph that keeps structured
+  artifacts for mixed questions.
+- Phase 2.5: chat compaction (`compact_history`, >8 turns → LLM summary into
+  `condensed`) + rate limiting (`UsageGate`: MAX_LLM_CALLS_PER_MIN=60,
+  MAX_LLM_CALLS_PER_SESSION=300, MAX_MODERATIONS_PER_MIN=30, wrapped Tavily).
+
 ## Commands
 
 ```bash
@@ -43,6 +63,8 @@ src/document_ingestion/     loaders (PyMuPDF/Text/WebBase), chunking,
                             PaperMetadata structured extraction
 src/vector_store/store.py   FAISS + MMR retriever (k=15, fetch_k=30, λ=0.7)
 src/nodes/react_node.py     the 4 graph nodes + agent system prompt
+src/nodes/synthesis.py      intent router (qa/compare/review/gaps) + synthesis node
+                            (Pydantic artifacts > rendered markdown)
 src/graph_builder/graph.py  node wiring (expand → rewrite → retrieve → agent)
 prompts/agent_v1.md         versioned default system prompt (env-overridable)
 evaluations/issue_five/     ground_truth.json (12 Qs) + run_eval.py
