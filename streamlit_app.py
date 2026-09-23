@@ -1,6 +1,7 @@
 import json
 import os
 import tempfile
+import time
 import uuid
 from collections import Counter
 from pathlib import Path
@@ -130,10 +131,87 @@ def clear_session_state():
         "chunk_counts",
         "messages",
         "followups",
+        "nf_generating",
+        "nf_question",
     ]:
         st.session_state.pop(key, None)
     st.session_state.messages = []
     st.session_state.followups = {}
+
+
+def _stream_chunks(text: str, max_updates: int = 60) -> list[str]:
+    """Split text into ~`max_updates` progressively longer prefixes for a
+    cosmetic streaming reveal. Empty/very short inputs collapse to one step."""
+    text = text or ""
+    if len(text) <= 8:
+        return [text]
+    n = max(1, min(max_updates, len(text)))
+    step = max(1, (len(text) + n - 1) // n)
+    return [text[:i] for i in range(step, len(text) + step, step)]
+
+
+def _stream_markdown(text: str) -> None:
+    """Reveal `text` into a live placeholder, Perplexity-style (cosmetic)."""
+    ph = st.empty()
+    prefixes = _stream_chunks(text)
+    if len(prefixes) <= 1:
+        ph.markdown(text)
+        return
+    delay = max(0.008, min(0.08, 3.0 / len(prefixes)))
+    for i, prefix in enumerate(prefixes):
+        ph.markdown(prefix + ("▌" if i < len(prefixes) - 1 else ""))
+        time.sleep(delay)
+
+
+def _answer_question(question: str):
+    """Run the pipeline for `question`. Returns
+    (answer, task_type, task_label, result); failures degrade to ERROR_MSG."""
+    try:
+        result = st.session_state.graph.run(
+            question,
+            source_files=st.session_state.get("source_files", []),
+            paper_metadata=st.session_state.get("paper_metadata", {}),
+            chat_history=st.session_state.messages[:-1],
+        )
+        answer = result.get("answer", "No answer generated.")
+        task_type = result.get("task_type", "qa")
+        task_label = "agent" if task_type == "qa" else "synthesis"
+    except Exception:
+        answer = ERROR_MSG
+        task_type = "qa"
+        task_label = None
+        result = {}
+    return answer, task_type, task_label, result
+
+
+def _reveal_followups(idx, task_type, task_label, result) -> None:
+    """Compute + reveal follow-up chips inside the answer bubble (same run).
+    LLM-generated when the budget allows, else deterministic templates —
+    never a hard failure path."""
+    if not task_label:
+        return
+    ph = st.empty()
+    ph.caption("Suggesting follow-ups…")
+    if g_usage.try_llm(st.session_state.nf_session_id):
+        followups = generate_followups(
+            result,
+            Config.get_llm(),
+            st.session_state.get("source_files", []),
+            st.session_state.get("paper_metadata", {}),
+        )
+    else:
+        followups = deterministic_followups(
+            st.session_state.get("source_files", []),
+            st.session_state.get("paper_metadata", {}),
+            task_type,
+        )
+    ph.empty()
+    for j, q in enumerate(followups):
+        if st.button(f"Ask: {q}", key=f"fup_{idx}_{j}"):
+            st.session_state.pending_followup = q
+            st.rerun()
+        time.sleep(0.12)
+    st.session_state.followups[idx] = followups
 
 
 def _demo_cache_key(pdfs, url):
@@ -274,11 +352,20 @@ def ingest_documents(uploaded_files=None, url=None):
         )
 
 
-def render_message(role, content):
-    """Render a chat message with a copy button for assistant replies."""
+def render_message(role, content, task=None):
+    """Render a chat message with a task caption + copy button for replies.
+
+    Copy buttons are rendered ONLY from here (the message loop). Keyless
+    components.html iframes are matched by script position, so rendering a
+    copy button anywhere else (e.g. inline in the handler) made the iframe
+    re-mount across runs — the transient duplicate that flashed over the
+    question. One render site keeps every iframe in a stable position.
+    """
     with st.chat_message(role):
         st.markdown(content)
         if role == "assistant":
+            if task:
+                st.caption(f"task: {task}")
             render_copy_button(content)
 
 
@@ -352,6 +439,8 @@ with st.sidebar:
     if st.button("Clear chat"):
         st.session_state.messages = []
         st.session_state.followups = {}
+        st.session_state.pop("nf_generating", None)
+        st.session_state.pop("nf_question", None)
 
 if DEPLOYED and (
         "graph" not in st.session_state or st.session_state.graph is None
@@ -361,15 +450,50 @@ if DEPLOYED and (
         "get started."
     )
 
+# Conversations live only in this browser session. A native beforeunload
+# confirm isn't possible inside Streamlit's sandboxed components.html
+# iframes, so an in-app banner is the honest equivalent.
+if st.session_state.messages:
+    st.warning(
+        "This session keeps your conversation only while this tab is open — "
+        "refreshing clears it."
+    )
+
 for i, msg in enumerate(st.session_state.messages):
-    render_message(msg["role"], msg["content"])
+    render_message(msg["role"], msg["content"], msg.get("task"))
     if msg["role"] == "assistant" and i in st.session_state.followups:
         for j, q in enumerate(st.session_state.followups[i]):
             if st.button(f"Ask: {q}", key=f"fup_{i}_{j}"):
                 st.session_state.pending_followup = q
                 st.rerun()
 
-prompt = st.chat_input("Ask about your documents …")
+# --- Answer-production run: the input is disabled while the graph works. ---
+# Two-phase handler: the capture run below stashes the question and reruns
+# with nf_generating set; THIS run streams the answer, reveals the follow-up
+# chips in the same bubble, then reruns once more so the loop renders the
+# message (caption + copy button + chips) and the input comes back enabled.
+generating = st.session_state.pop("nf_generating", False)
+if generating:
+    question = st.session_state.pop("nf_question", "")
+    with st.chat_message("assistant"):
+        with st.spinner("Thinking …"):
+            answer, task_type, task_label, result = _answer_question(question)
+        _stream_markdown(answer)
+        if task_label:
+            st.caption(f"task: {task_type} → {task_label}")
+        _reveal_followups(
+            len(st.session_state.messages), task_type, task_label, result
+        )
+    assistant_msg = {"role": "assistant", "content": answer}
+    if task_label:
+        assistant_msg["task"] = f"{task_type} → {task_label}"
+    st.session_state.messages.append(assistant_msg)
+
+prompt = st.chat_input("Ask about your documents …", disabled=generating)
+
+if generating:
+    st.rerun()
+
 pending = st.session_state.pop("pending_followup", None)
 if pending:
     prompt = pending
@@ -408,45 +532,10 @@ if prompt:
         with st.chat_message("assistant"):
             st.markdown(answer)
     else:
-        with st.chat_message("assistant"):
-            with st.spinner("Thinking …"):
-                try:
-                    result = st.session_state.graph.run(
-                        prompt,
-                        source_files=st.session_state.get("source_files", []),
-                        paper_metadata=st.session_state.get("paper_metadata", {}),
-                        chat_history=st.session_state.messages[:-1],
-                    )
-                    answer = result.get("answer", "No answer generated.")
-                    task_type = result.get("task_type", "qa")
-                    task_label = (
-                        "agent" if task_type == "qa" else "synthesis"
-                    )
-                except Exception:
-                    answer = ERROR_MSG
-                    task_label = None
-            st.markdown(answer)
-            if task_label:
-                st.caption(f"task: {task_type} → {task_label}")
-            render_copy_button(answer)
+        # Real question: defer to the generating run above (disabled input +
+        # streamed answer), then rerun to complete.
+        st.session_state["nf_question"] = prompt
+        st.session_state["nf_generating"] = True
+        st.rerun()
 
     st.session_state.messages.append({"role": "assistant", "content": answer})
-
-    # Perplexity-style suggested follow-ups: only after a real graph answer.
-    # LLM-generated when the budget allows, else deterministic templates —
-    # never a hard failure path.
-    if task_label:
-        idx = len(st.session_state.messages) - 1
-        if g_usage.try_llm(st.session_state.nf_session_id):
-            st.session_state.followups[idx] = generate_followups(
-                result,
-                Config.get_llm(),
-                st.session_state.get("source_files", []),
-                st.session_state.get("paper_metadata", {}),
-            )
-        else:
-            st.session_state.followups[idx] = deterministic_followups(
-                st.session_state.get("source_files", []),
-                st.session_state.get("paper_metadata", {}),
-                task_type,
-            )
