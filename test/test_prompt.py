@@ -23,3 +23,16 @@ def test_bundled_fallback_when_file_missing(monkeypatch):
         "src.nodes.react_node._PROMPT_PATH", Path("/nonexistent/agent_v1.md")
     )
     assert load_system_prompt() == _BUNDLED_SYSTEM_PROMPT
+
+
+def test_prompt_has_hardening_rules():
+    prompt = load_system_prompt()
+    for rule in ("MULTI-PART QUESTIONS", "ORDINAL REFERENCES", "PROFILE LOOKUPS"):
+        assert rule in prompt
+
+
+def test_bundled_and_file_prompts_stay_in_sync():
+    prompt = load_system_prompt()
+    for rule in ("MULTI-PART QUESTIONS", "ORDINAL REFERENCES", "PROFILE LOOKUPS"):
+        assert rule in _BUNDLED_SYSTEM_PROMPT
+        assert rule in prompt

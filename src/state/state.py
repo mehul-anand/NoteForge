@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from langchain_core.documents import Document
 from pydantic import BaseModel
@@ -25,3 +25,9 @@ class State(BaseModel):
     chat_history: List[Dict[str, str]] = []
     sub_queries: List[str] = []
     rewritten_queries: List[str] = []
+    # Intent routing: one of qa / compare / review / gaps (default qa).
+    task_type: str = "qa"
+    # Structured synthesis output (ComparisonMatrix/RelatedWork/ResearchGaps)
+    # as a populated dict — kept for evals and future UI, the rendered markdown
+    # lives in `answer`.
+    artifact: Optional[Dict[str, Any]] = None
