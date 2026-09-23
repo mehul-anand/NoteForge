@@ -7,7 +7,8 @@ for the full architecture walkthrough; this file is the operational cheat-sheet.
 
 NoteForge — a RAG (retrieval-augmented generation) pipeline on LangGraph.
 Upload PDFs (or URLs) → chunks + FAISS/MMR index + per-document structured
-metadata → question → `expand_query → rewrite_queries → retrieve → agent(ReAct + Tavily)`.
+metadata → question → `route_intent → expand_query → rewrite_queries → retrieve
+→ agent(ReAct + Tavily) | synthesize (matrix/related-work/gaps)`.
 Product direction: Literature Review Copilot (see `notes/new_direction.md`).
 
 ## TODO (next)
@@ -65,7 +66,8 @@ src/vector_store/store.py   FAISS + MMR retriever (k=15, fetch_k=30, λ=0.7)
 src/nodes/react_node.py     the 4 graph nodes + agent system prompt
 src/nodes/synthesis.py      intent router (qa/compare/review/gaps) + synthesis node
                             (Pydantic artifacts > rendered markdown)
-src/graph_builder/graph.py  node wiring (expand → rewrite → retrieve → agent)
+src/graph_builder/graph.py  node wiring (route_intent → expand → rewrite →
+                            retrieve → agent | synthesize)
 prompts/agent_v1.md         versioned default system prompt (env-overridable)
 evaluations/issue_five/     ground_truth.json (12 Qs) + run_eval.py
 old_version/                pre-change snapshots (rollback copies; gitignored)
