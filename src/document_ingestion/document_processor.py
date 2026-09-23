@@ -28,6 +28,17 @@ def normalize_source_key(source: str) -> str:
     return Path(str(source)).name
 
 
+def relabel_sources(documents, source: str) -> None:
+    """Set every document's source metadata to a canonical label, in place.
+
+    Uploaded files are loaded from temporary paths (e.g.
+    `/tmp/tmpj_fmf38p.pdf`); relabelling keeps chunk counts, paper metadata
+    keys, and the agent's file matching all keyed by the original filename
+    the user actually uploaded."""
+    for doc in documents:
+        doc.metadata["source"] = source
+
+
 class PaperMetadata(BaseModel):
     """Structured metadata extracted from the first page of a document."""
 
