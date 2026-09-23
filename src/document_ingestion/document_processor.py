@@ -17,6 +17,17 @@ from pydantic import BaseModel, Field
 from src.config.config import Config
 
 
+def normalize_source_key(source: str) -> str:
+    """Canonical key for a document source.
+
+    PDFs/TXT keys are their basename; URL sources are the full URL so that
+    `source_files`, `paper_metadata`, and retriever doc metadata all agree
+    (a partial path like `2307.03172v3` would never match the URL)."""
+    if source.startswith(("http://", "https://")):
+        return source
+    return Path(str(source)).name
+
+
 class PaperMetadata(BaseModel):
     """Structured metadata extracted from the first page of a document."""
 
@@ -72,7 +83,7 @@ class DocumentHandler:
     def extract_summaries(self, documents: List[Document], llm) -> dict:
         grouped = {}
         for doc in documents:
-            src = Path(doc.metadata.get("source", "")).name
+            src = normalize_source_key(doc.metadata.get("source", ""))
             page = doc.metadata.get("page", 0)
             if src not in grouped or page < grouped[src]["page"]:
                 grouped[src] = {"page": page, "content": doc.page_content[:2000]}
@@ -113,7 +124,7 @@ class DocumentHandler:
         """
         grouped = {}
         for doc in documents:
-            src = Path(doc.metadata.get("source", "")).name
+            src = normalize_source_key(doc.metadata.get("source", ""))
             page = doc.metadata.get("page", 0)
             if src not in grouped or page < grouped[src]["page"]:
                 grouped[src] = {"page": page, "content": doc.page_content[:3000]}

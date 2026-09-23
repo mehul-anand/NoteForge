@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 
 from src.config.config import Config, moderation
 from src.document_ingestion.document_processor import DocumentHandler
+from src.document_ingestion.document_processor import normalize_source_key
 from src.graph_builder.graph import GraphBuilder
 from src.vector_store.store import VectorStore
 
@@ -146,7 +147,7 @@ def ingest_documents(uploaded_files=None, url=None):
 
         filenames = [Path(pdf.name).name for pdf in pdfs]
         if url:
-            filenames.append(url)
+            filenames.append(normalize_source_key(url))
         st.session_state.source_files = filenames
 
         status.write("Extracting structured paper metadata …")
