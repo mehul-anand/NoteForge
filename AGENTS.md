@@ -90,6 +90,7 @@ notes/                      design docs + interview notes (gitignored)
 - **URLs** are treated as first-class sources alongside PDFs (WebBaseLoader).
 - Add new evaluation questions to `ground_truth.json` + bump `run_eval.py`,
   and keep the LLM-judge metric (noisy ±0.1 — run 2-3x for stable numbers).
+- Community Cloud installs from uv.lock (prioritized), falling back to requirements.txt. Keep both in sync with pyproject.toml — after any dep change: uv sync then uv pip compile pyproject.toml -o requirements.txt
 
 ## GenAI specifics
 
