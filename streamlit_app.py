@@ -13,7 +13,9 @@ from src.config.config import Config, moderation
 from src.config.usage import get_usage_gate
 from src.document_ingestion.document_processor import DocumentHandler
 from src.document_ingestion.document_processor import normalize_source_key
+from src.document_ingestion.document_processor import relabel_sources
 from src.graph_builder.graph import GraphBuilder
+from src.suggestions import deterministic_followups, generate_followups
 from src.vector_store.store import VectorStore
 
 load_dotenv()
@@ -58,6 +60,8 @@ st.title("NoteForge — RAG Q&A")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
+if "followups" not in st.session_state:
+    st.session_state.followups = {}
 if "nf_session_id" not in st.session_state:
     st.session_state.nf_session_id = uuid.uuid4().hex
 
@@ -125,9 +129,11 @@ def clear_session_state():
         "paper_metadata",
         "chunk_counts",
         "messages",
+        "followups",
     ]:
         st.session_state.pop(key, None)
     st.session_state.messages = []
+    st.session_state.followups = {}
 
 
 def _demo_cache_key(pdfs, url):
@@ -204,6 +210,8 @@ def ingest_documents(uploaded_files=None, url=None):
                     if suffix == ".pdf"
                     else handler.text_loader(temp_path)
                 )
+                if source_from_upload:
+                    relabel_sources(loaded, file_label)
                 all_docs.extend(loaded)
 
             if url:
@@ -343,6 +351,7 @@ with st.sidebar:
     st.divider()
     if st.button("Clear chat"):
         st.session_state.messages = []
+        st.session_state.followups = {}
 
 if DEPLOYED and (
         "graph" not in st.session_state or st.session_state.graph is None
@@ -354,8 +363,18 @@ if DEPLOYED and (
 
 for i, msg in enumerate(st.session_state.messages):
     render_message(msg["role"], msg["content"])
+    if msg["role"] == "assistant" and i in st.session_state.followups:
+        for j, q in enumerate(st.session_state.followups[i]):
+            if st.button(f"Ask: {q}", key=f"fup_{i}_{j}"):
+                st.session_state.pending_followup = q
+                st.rerun()
 
-if prompt := st.chat_input("Ask about your documents …"):
+prompt = st.chat_input("Ask about your documents …")
+pending = st.session_state.pop("pending_followup", None)
+if pending:
+    prompt = pending
+
+if prompt:
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
@@ -364,16 +383,28 @@ if prompt := st.chat_input("Ask about your documents …"):
         answer = (
             "No documents loaded. Upload PDFs or add a URL using the sidebar."
         )
+        task_label = None
+        result = {}
+        task_type = "qa"
     elif not g_usage.try_llm(st.session_state.nf_session_id):
         answer = RATE_LIMIT_MSG
+        task_label = None
+        result = {}
+        task_type = "qa"
         with st.chat_message("assistant"):
             st.markdown(answer)
     elif not g_usage.try_moderation():
         answer = RATE_LIMIT_MSG
+        task_label = None
+        result = {}
+        task_type = "qa"
         with st.chat_message("assistant"):
             st.markdown(answer)
     elif not moderation(prompt):
         answer = "I'm sorry, I can't help with that request."
+        task_label = None
+        result = {}
+        task_type = "qa"
         with st.chat_message("assistant"):
             st.markdown(answer)
     else:
@@ -400,3 +431,22 @@ if prompt := st.chat_input("Ask about your documents …"):
             render_copy_button(answer)
 
     st.session_state.messages.append({"role": "assistant", "content": answer})
+
+    # Perplexity-style suggested follow-ups: only after a real graph answer.
+    # LLM-generated when the budget allows, else deterministic templates —
+    # never a hard failure path.
+    if task_label:
+        idx = len(st.session_state.messages) - 1
+        if g_usage.try_llm(st.session_state.nf_session_id):
+            st.session_state.followups[idx] = generate_followups(
+                result,
+                Config.get_llm(),
+                st.session_state.get("source_files", []),
+                st.session_state.get("paper_metadata", {}),
+            )
+        else:
+            st.session_state.followups[idx] = deterministic_followups(
+                st.session_state.get("source_files", []),
+                st.session_state.get("paper_metadata", {}),
+                task_type,
+            )
