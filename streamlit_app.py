@@ -61,6 +61,12 @@ if "messages" not in st.session_state:
 if "nf_session_id" not in st.session_state:
     st.session_state.nf_session_id = uuid.uuid4().hex
 
+# Widget state (e.g. the URL input) can only be changed BEFORE the widget is
+# instantiated in a run, so the "clear the URL box" request is carried via a
+# plain flag and applied here while the sidebar widgets don't exist yet.
+if st.session_state.pop("nf_clear_url", False):
+    st.session_state["nf_url_input"] = ""
+
 RATE_LIMIT_MSG = (
     "You've hit the demo's temporary usage limit — please wait a minute "
     "and try again."
@@ -121,7 +127,7 @@ def clear_session_state():
         "messages",
     ]:
         st.session_state.pop(key, None)
-        st.session_state.messages = []
+    st.session_state.messages = []
 
 
 def _demo_cache_key(pdfs, url):
@@ -315,7 +321,8 @@ with st.sidebar:
         clear_session_state()
         ingest_documents(uploaded_files, url=url_input or None)
         if "graph" in st.session_state:
-            st.session_state["nf_url_input"] = ""
+            st.session_state.nf_clear_url = True
+            st.rerun()
 
     st.divider()
 
