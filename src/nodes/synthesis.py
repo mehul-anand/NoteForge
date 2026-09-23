@@ -19,6 +19,7 @@ from typing import List
 from pydantic import BaseModel, Field
 
 from src.nodes.react_node import Nodes
+from src.document_ingestion.document_processor import normalize_source_key
 from src.state.state import State
 
 
@@ -159,7 +160,9 @@ class ReviewSynthesizer:
     def _build_context(self, state: State) -> str:
         metadata_parts = []
         for fname in state.source_files:
-            meta = state.paper_metadata.get(fname)
+            meta = state.paper_metadata.get(
+                fname
+            ) or state.paper_metadata.get(normalize_source_key(fname))
             if meta:
                 metadata_parts.append(f"  {Nodes._format_paper_metadata(fname, meta)}")
         metadata_block = (

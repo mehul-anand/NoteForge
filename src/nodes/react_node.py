@@ -13,6 +13,41 @@ from langgraph.prebuilt import create_react_agent
 from src.document_ingestion.document_processor import normalize_source_key
 from src.state.state import State
 
+# Assistant turns that are system noise (rate-limit / error / refusal stubs
+# produced by the UI) must not leak into the agent's history or the rewrite
+# context — the model would otherwise absorb them as real conversation.
+_NOISE_ASSISTANT_MARKERS = (
+    "You've hit the demo's temporary usage limit",
+    "Sorry, something went wrong while generating that answer",
+    "No documents loaded. Upload PDFs or add a URL",
+    "I'm sorry, I can't help with that request.",
+)
+
+
+def _clean_history(chat_history) -> List[dict]:
+    """Drop non-conversation turns (system noise, unknown roles) from history."""
+    cleaned = []
+    for msg in chat_history or []:
+        role = msg.get("role")
+        content = msg.get("content", "")
+        if role == "assistant" and any(
+            m in content for m in _NOISE_ASSISTANT_MARKERS
+        ):
+            continue
+        if role not in ("user", "assistant"):
+            continue
+        cleaned.append({"role": role, "content": content})
+    return cleaned
+
+
+def _history_context(chat_history, turns: int = 4) -> str:
+    """Compact recent-turns digest for retrieval-stage prompts."""
+    recent = _clean_history(chat_history)[-turns:]
+    if not recent:
+        return ""
+    lines = [f"{m['role']}: {m['content'][:300]}" for m in recent]
+    return "\n".join(lines)
+
 # Versioned default agent system prompt lives in prompts/agent_v1.md.
 # Load chain: AGENT_SYSTEM_PROMPT env > prompts/agent_v1.md > this bundled
 # fallback (kept so the app works if the repo file is missing).
@@ -139,6 +174,14 @@ class Nodes:
 
     def rewrite_queries(self, state: State) -> State:
         rewritten = []
+        history = _history_context(state.chat_history)
+        history_part = (
+            "Recent conversation (use it to resolve references like 'that "
+            "paper', 'the co-authors', 'the second one'):\n"
+            f"{history}\n\n"
+            if history
+            else ""
+        )
         for q in state.sub_queries:
             prompt = (
                 "Rewrite the following search query to improve vector embedding "
@@ -146,6 +189,7 @@ class Nodes:
                 "acronyms to their full forms. Add domain-relevant terminology "
                 "without inventing specific facts. Do NOT answer the query — only "
                 "expand and clarify it. Return ONLY the rewritten query.\n\n"
+                f"{history_part}"
                 f"Original: {q}"
             )
             try:
@@ -491,7 +535,7 @@ class Nodes:
             )
 
         history_messages = []
-        for msg in state.chat_history:
+        for msg in _clean_history(state.chat_history):
             if msg["role"] == "user":
                 history_messages.append(HumanMessage(content=msg["content"]))
             elif msg["role"] == "assistant":

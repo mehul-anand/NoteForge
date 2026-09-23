@@ -305,6 +305,7 @@ with st.sidebar:
     url_input = st.text_input(
         "Or add a URL",
         placeholder="https://…",
+        key="nf_url_input",
         help="Treat a web page as a first-class source alongside PDFs.",
     )
 
@@ -313,10 +314,18 @@ with st.sidebar:
     ):
         clear_session_state()
         ingest_documents(uploaded_files, url=url_input or None)
+        if "graph" in st.session_state:
+            st.session_state["nf_url_input"] = ""
 
     st.divider()
 
-    if api_key and "graph" not in st.session_state and not uploaded_files and not url_input:
+    if (
+        not DEPLOYED
+        and api_key
+        and "graph" not in st.session_state
+        and not uploaded_files
+        and not url_input
+    ):
         ingest_documents()
 
     if "chunk_counts" in st.session_state:
@@ -327,6 +336,14 @@ with st.sidebar:
     st.divider()
     if st.button("Clear chat"):
         st.session_state.messages = []
+
+if DEPLOYED and (
+        "graph" not in st.session_state or st.session_state.graph is None
+    ):
+    st.info(
+        "No documents loaded. Upload PDFs or add a URL from the sidebar to "
+        "get started."
+    )
 
 for i, msg in enumerate(st.session_state.messages):
     render_message(msg["role"], msg["content"])
@@ -363,9 +380,16 @@ if prompt := st.chat_input("Ask about your documents …"):
                         chat_history=st.session_state.messages[:-1],
                     )
                     answer = result.get("answer", "No answer generated.")
+                    task_type = result.get("task_type", "qa")
+                    task_label = (
+                        "agent" if task_type == "qa" else "synthesis"
+                    )
                 except Exception:
                     answer = ERROR_MSG
+                    task_label = None
             st.markdown(answer)
+            if task_label:
+                st.caption(f"task: {task_type} → {task_label}")
             render_copy_button(answer)
 
     st.session_state.messages.append({"role": "assistant", "content": answer})
